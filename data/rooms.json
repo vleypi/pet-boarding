@@ -1,0 +1,38 @@
+[
+    {
+        "id": 1,
+        "name": "Вольер 1",
+        "size": "малое",
+        "price_per_night": 800
+    },
+    {
+        "id": 2,
+        "name": "Вольер 2",
+        "size": "малое",
+        "price_per_night": 800
+    },
+    {
+        "id": 3,
+        "name": "Комната 1",
+        "size": "среднее",
+        "price_per_night": 1200
+    },
+    {
+        "id": 4,
+        "name": "Комната 2",
+        "size": "среднее",
+        "price_per_night": 1200
+    },
+    {
+        "id": 5,
+        "name": "Апартаменты 1",
+        "size": "большое",
+        "price_per_night": 1800
+    },
+    {
+        "id": 6,
+        "name": "Апартаменты 2",
+        "size": "большое",
+        "price_per_night": 1800
+    }
+]

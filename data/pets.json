@@ -1,0 +1,29 @@
+[
+    {
+        "id": 1,
+        "name": "Барсик",
+        "species": "кошка",
+        "age_months": 18,
+        "weight_kg": 4.5,
+        "is_vaccinated": true,
+        "owner": "Иванова Анна"
+    },
+    {
+        "id": 2,
+        "name": "Рекс",
+        "species": "собака",
+        "age_months": 36,
+        "weight_kg": 24.0,
+        "is_vaccinated": true,
+        "owner": "Петров Сергей"
+    },
+    {
+        "id": 3,
+        "name": "Мухтар",
+        "species": "собака",
+        "age_months": 8,
+        "weight_kg": 12.5,
+        "is_vaccinated": false,
+        "owner": "Смирнова Ольга"
+    }
+]
