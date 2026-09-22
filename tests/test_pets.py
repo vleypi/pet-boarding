@@ -1,48 +1,81 @@
-from pet_boarding.pets import (
+from pet_boarding.constants import SIZE_LARGE, SIZE_MEDIUM, SIZE_SMALL
+from pet_boarding.models import Pet
+from pet_boarding.models.pets import (
     add_pet,
-    can_accept_pet,
-    choose_room_size,
+    count_by_species,
     find_pets,
+    sort_pets_by_weight,
 )
 
 
-def test_can_accept_healthy_pet():
+def test_healthy_pet_is_accepted(cat):
     """Кошка с прививками старше трёх месяцев принимается"""
-    assert can_accept_pet("кошка", 18, True)
+    assert cat.can_be_accepted()
+    assert cat.rejection_reason() == ""
 
 
-def test_reject_pet_without_vaccination():
+def test_pet_without_vaccination_is_rejected(owner):
     """Питомец без прививок не принимается"""
-    assert not can_accept_pet("собака", 36, False)
+    pet = Pet(3, "Мухтар", "собака", 8, 12.5, False, owner)
+    assert not pet.can_be_accepted()
+    assert "прививок" in pet.rejection_reason()
 
 
-def test_reject_too_young_pet():
+def test_too_young_pet_is_rejected(owner):
     """Питомец младше трёх месяцев не принимается"""
-    assert not can_accept_pet("кошка", 2, True)
+    pet = Pet(4, "Пушок", "кошка", 2, 1.2, True, owner)
+    assert not pet.can_be_accepted()
 
 
-def test_reject_unsupported_species():
+def test_unsupported_species_is_rejected(owner):
     """Гостиница принимает только кошек и собак"""
-    assert not can_accept_pet("попугай", 24, True)
+    pet = Pet(5, "Кеша", "попугай", 24, 0.3, True, owner)
+    assert not pet.can_be_accepted()
 
 
-def test_choose_room_size_by_weight():
+def test_is_supported_species_called_on_class():
+    """Проверка вида вызывается через класс без создания объекта"""
+    assert Pet.is_supported_species("собака")
+    assert not Pet.is_supported_species("хомяк")
+
+
+def test_required_room_size_by_weight(owner):
     """Размер места подбирается по весу питомца"""
-    assert choose_room_size(4.5) == "малое"
-    assert choose_room_size(12.5) == "среднее"
-    assert choose_room_size(24.0) == "большое"
+    sizes = [
+        Pet(1, "Тест", "кошка", 12, weight, True, owner).required_room_size()
+        for weight in (4.5, 12.5, 24.0)
+    ]
+    assert sizes == [SIZE_SMALL, SIZE_MEDIUM, SIZE_LARGE]
 
 
-def test_add_pet_returns_new_id():
-    """Добавленный питомец получает номер и попадает в словарь"""
-    pets = {}
-    pet_id = add_pet(pets, "Барсик", "кошка", 18, 4.5, True, "Иванова")
-    assert pet_id == 1
-    assert pets[pet_id]["name"] == "Барсик"
+def test_pet_keeps_owner_object(cat, owner):
+    """Питомец хранит сам объект владельца, а в JSON пишет его номер"""
+    assert cat.owner is owner
+    assert cat.to_data()["owner_id"] == owner.id
 
 
-def test_find_pets_by_name_part():
-    """Поиск находит питомца по части клички"""
-    pets = {}
-    add_pet(pets, "Барсик", "кошка", 18, 4.5, True, "Иванова")
-    assert find_pets(pets, "бар")
+def test_pet_restored_from_data(cat, owner):
+    """Питомец восстанавливается из данных JSON и объекта владельца"""
+    restored = Pet.from_data(cat.to_data(), owner)
+    assert restored.to_data() == cat.to_data()
+    assert restored.owner is owner
+
+
+def test_add_pet_assigns_next_id(owner):
+    """Добавленный питомец получает номер и попадает в список"""
+    pets = []
+    pet = add_pet(pets, "Барсик", "кошка", 18, 4.5, True, owner)
+    assert pet.id == 1
+    assert pets == [pet]
+
+
+def test_find_pets_by_name_or_owner(cat, dog):
+    """Поиск находит питомцев по части клички и по имени владельца"""
+    assert find_pets([cat, dog], "бар") == [cat]
+    assert find_pets([cat, dog], "иванова") == [cat, dog]
+
+
+def test_sort_and_count_pets(cat, dog):
+    """Питомцы сортируются по весу и считаются по видам"""
+    assert sort_pets_by_weight([dog, cat]) == [cat, dog]
+    assert count_by_species([cat, dog]) == {"кошка": 1, "собака": 1}
