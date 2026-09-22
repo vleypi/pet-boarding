@@ -1,6 +1,6 @@
-from pet_boarding.constants import SIZE_LARGE, SIZE_MEDIUM, SIZE_SMALL
-from pet_boarding.models import Pet
-from pet_boarding.models.pets import (
+from src.constants import SIZE_LARGE, SIZE_MEDIUM, SIZE_SMALL
+from src.models import Pet
+from src.models.pets import (
     add_pet,
     count_by_species,
     find_pets,

@@ -1,6 +1,6 @@
 from typing import Optional
 
-from pet_boarding.constants import (
+from src.constants import (
     ALLOWED_SPECIES,
     MEDIUM_ROOM_MAX_WEIGHT,
     MIN_AGE_MONTHS,
@@ -9,8 +9,8 @@ from pet_boarding.constants import (
     SIZE_SMALL,
     SMALL_ROOM_MAX_WEIGHT,
 )
-from pet_boarding.models.common import next_id
-from pet_boarding.models.users import User
+from src.models.common import next_id
+from src.models.users import User
 
 
 class Pet:

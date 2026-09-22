@@ -235,7 +235,7 @@ pet-boarding/
 ├── main.py                     точка запуска
 ├── requirements.txt            зависимости разработки
 ├── setup.cfg                   настройки pytest и flake8
-├── pet_boarding/
+├── src/
 │   ├── __init__.py
 │   ├── models/                 классы предметной области
 │   │   ├── __init__.py         экспорт классов

@@ -1,7 +1,7 @@
 from typing import Optional
 
-from pet_boarding.constants import ROLE_ADMIN, ROLE_CLIENT
-from pet_boarding.models.common import next_id
+from src.constants import ROLE_ADMIN, ROLE_CLIENT
+from src.models.common import next_id
 
 
 class User:

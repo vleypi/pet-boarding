@@ -1,7 +1,7 @@
-from pet_boarding import storage
-from pet_boarding.exceptions import BookingError
-from pet_boarding.models import Booking, Pet, Room, User
-from pet_boarding.models.bookings import (
+from src import storage
+from src.exceptions import BookingError
+from src.models import Booking, Pet, Room, User
+from src.models.bookings import (
     cancel_booking,
     create_booking,
     get_booking_status,
@@ -10,21 +10,21 @@ from pet_boarding.models.bookings import (
     sort_bookings_by_date,
     validate_period,
 )
-from pet_boarding.models.pets import (
+from src.models.pets import (
     add_pet,
     count_by_species,
     find_pet_by_id,
     find_pets,
     sort_pets_by_weight,
 )
-from pet_boarding.models.rooms import (
+from src.models.rooms import (
     count_by_size,
     filter_rooms_for_pet,
     find_room_by_id,
     sort_rooms_by_price,
 )
-from pet_boarding.models.users import add_user, find_user_by_id
-from pet_boarding.utils import (
+from src.models.users import add_user, find_user_by_id
+from src.utils import (
     input_date,
     input_float,
     input_int,

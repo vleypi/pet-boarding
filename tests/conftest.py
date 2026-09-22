@@ -1,6 +1,6 @@
 import pytest
 
-from pet_boarding.models import Pet, Room, User
+from src.models import Pet, Room, User
 
 
 @pytest.fixture

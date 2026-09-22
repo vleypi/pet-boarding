@@ -1,6 +1,6 @@
-from pet_boarding.constants import ROLE_ADMIN, ROLE_CLIENT
-from pet_boarding.models import User
-from pet_boarding.models.users import add_user, find_user_by_id
+from src.constants import ROLE_ADMIN, ROLE_CLIENT
+from src.models import User
+from src.models.users import add_user, find_user_by_id
 
 
 def test_user_creation():

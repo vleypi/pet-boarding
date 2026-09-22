@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from pet_boarding.constants import (
+from src.constants import (
     BOOKINGS_FILE,
     ENCODING,
     JSON_INDENT,
@@ -9,10 +9,10 @@ from pet_boarding.constants import (
     ROOMS_FILE,
     USERS_FILE,
 )
-from pet_boarding.models import Booking, Pet, Room, User
-from pet_boarding.models.pets import find_pet_by_id
-from pet_boarding.models.rooms import find_room_by_id
-from pet_boarding.models.users import find_user_by_id
+from src.models import Booking, Pet, Room, User
+from src.models.pets import find_pet_by_id
+from src.models.rooms import find_room_by_id
+from src.models.users import find_user_by_id
 
 
 def load_json(path: Path) -> list[dict]:

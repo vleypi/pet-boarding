@@ -1,4 +1,4 @@
-from pet_boarding.cli import run
+from src.cli import run
 
 if __name__ == "__main__":
     run()

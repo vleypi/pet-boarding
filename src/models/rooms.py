@@ -1,9 +1,9 @@
 from datetime import date
 from typing import Optional
 
-from pet_boarding.constants import ROOM_SIZES
-from pet_boarding.models.common import count_nights
-from pet_boarding.models.pets import Pet
+from src.constants import ROOM_SIZES
+from src.models.common import count_nights
+from src.models.pets import Pet
 
 
 class Room:

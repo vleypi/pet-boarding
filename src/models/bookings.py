@@ -1,16 +1,16 @@
 from datetime import date
 from typing import Optional
 
-from pet_boarding.constants import STATUS_ACTIVE, STATUS_CANCELLED
-from pet_boarding.exceptions import (
+from src.constants import STATUS_ACTIVE, STATUS_CANCELLED
+from src.exceptions import (
     InvalidPeriodError,
     PetNotAcceptedError,
     RoomNotAvailableError,
     RoomNotSuitableError,
 )
-from pet_boarding.models.common import count_nights, next_id
-from pet_boarding.models.pets import Pet
-from pet_boarding.models.rooms import Room
+from src.models.common import count_nights, next_id
+from src.models.pets import Pet
+from src.models.rooms import Room
 
 
 class Booking:

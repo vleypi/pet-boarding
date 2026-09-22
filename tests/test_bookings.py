@@ -2,16 +2,16 @@ from datetime import date
 
 import pytest
 
-from pet_boarding.constants import STATUS_ACTIVE, STATUS_CANCELLED
-from pet_boarding.exceptions import (
+from src.constants import STATUS_ACTIVE, STATUS_CANCELLED
+from src.exceptions import (
     BookingError,
     InvalidPeriodError,
     PetNotAcceptedError,
     RoomNotAvailableError,
     RoomNotSuitableError,
 )
-from pet_boarding.models import Booking, Pet
-from pet_boarding.models.bookings import (
+from src.models import Booking, Pet
+from src.models.bookings import (
     cancel_booking,
     create_booking,
     get_statistics,

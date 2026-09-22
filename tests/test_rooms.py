@@ -1,8 +1,8 @@
 from datetime import date
 
-from pet_boarding.constants import SIZE_SMALL
-from pet_boarding.models import Room
-from pet_boarding.models.rooms import (
+from src.constants import SIZE_SMALL
+from src.models import Room
+from src.models.rooms import (
     count_by_size,
     filter_rooms_for_pet,
     find_room_by_id,
