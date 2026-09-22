@@ -24,3 +24,6 @@ MEDIUM_ROOM_MAX_WEIGHT = 20
 
 ROLE_CLIENT = "клиент"
 ROLE_ADMIN = "администратор"
+
+STATUS_ACTIVE = "активно"
+STATUS_CANCELLED = "отменено"
