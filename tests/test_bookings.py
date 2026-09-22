@@ -1,5 +1,3 @@
-"""Тесты функций работы с бронированиями"""
-
 from datetime import date
 
 import pytest

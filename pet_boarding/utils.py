@@ -1,5 +1,3 @@
-"""Ввод данных пользователя с проверкой"""
-
 from datetime import date
 
 YES_ANSWERS = {"да", "д", "yes", "y"}

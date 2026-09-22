@@ -1,5 +1,3 @@
-"""Функции работы с питомцами гостиницы"""
-
 from pet_boarding.constants import (
     ALLOWED_SPECIES,
     MEDIUM_ROOM_MAX_WEIGHT,

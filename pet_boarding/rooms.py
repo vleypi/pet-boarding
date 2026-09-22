@@ -1,5 +1,3 @@
-"""Функции работы с местами гостиницы"""
-
 from pet_boarding.constants import ROOM_SIZES
 
 

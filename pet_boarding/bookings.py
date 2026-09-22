@@ -1,5 +1,3 @@
-"""Функции работы с бронированиями"""
-
 from datetime import date
 
 from pet_boarding.rooms import get_room_price

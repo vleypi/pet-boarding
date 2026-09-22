@@ -1,5 +1,3 @@
-"""Меню приложения и вывод данных"""
-
 from pet_boarding import bookings, pets, rooms, storage
 from pet_boarding.utils import (
     input_date,

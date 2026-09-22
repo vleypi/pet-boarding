@@ -1,5 +1,3 @@
-"""Тесты функций работы с питомцами"""
-
 from pet_boarding.pets import (
     add_pet,
     can_accept_pet,

@@ -1,5 +1,3 @@
-"""Чтение и запись данных проекта в файлах формата JSON"""
-
 import json
 from pathlib import Path
 
