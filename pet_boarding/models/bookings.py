@@ -120,6 +120,12 @@ def is_room_available(
     return True
 
 
+def validate_period(check_in: date, check_out: date) -> None:
+    """Проверить, что дата выезда позже даты заезда"""
+    if check_out <= check_in:
+        raise InvalidPeriodError("дата выезда должна быть позже даты заезда")
+
+
 def get_booking_status(is_available: bool) -> str:
     """Вернуть текстовый статус места"""
     if is_available:
@@ -135,8 +141,7 @@ def create_booking(
     check_out: date,
 ) -> Booking:
     """Проверить условия, создать бронирование и добавить его в список"""
-    if check_out <= check_in:
-        raise InvalidPeriodError("дата выезда должна быть позже даты заезда")
+    validate_period(check_in, check_out)
     reason = pet.rejection_reason()
     if reason:
         raise PetNotAcceptedError(reason)

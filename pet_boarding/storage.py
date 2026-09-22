@@ -7,7 +7,12 @@ from pet_boarding.constants import (
     JSON_INDENT,
     PETS_FILE,
     ROOMS_FILE,
+    USERS_FILE,
 )
+from pet_boarding.models import Booking, Pet, Room, User
+from pet_boarding.models.pets import find_pet_by_id
+from pet_boarding.models.rooms import find_room_by_id
+from pet_boarding.models.users import find_user_by_id
 
 
 def load_json(path: Path) -> list[dict]:
@@ -31,31 +36,64 @@ def save_json(path: Path, data: list[dict]) -> None:
         file.write("\n")
 
 
-def load_rooms() -> dict[int, dict]:
-    """Загрузить места и вернуть словарь, ключ это идентификатор"""
-    return {room["id"]: room for room in load_json(ROOMS_FILE)}
+def report_skipped(path: Path, item: dict) -> None:
+    """Сообщить о записи, для которой не найдены связанные данные"""
+    print(
+        f"Файл {path.name}: запись {item.get('id')} пропущена, "
+        f"связанные данные не найдены"
+    )
 
 
-def save_rooms(rooms: dict[int, dict]) -> None:
+def load_users() -> list[User]:
+    """Загрузить пользователей и создать объекты User"""
+    return [User.from_data(item) for item in load_json(USERS_FILE)]
+
+
+def save_users(users: list[User]) -> None:
+    """Сохранить пользователей в файл"""
+    save_json(USERS_FILE, [user.to_data() for user in users])
+
+
+def load_rooms() -> list[Room]:
+    """Загрузить места и создать объекты Room"""
+    return [Room.from_data(item) for item in load_json(ROOMS_FILE)]
+
+
+def save_rooms(rooms: list[Room]) -> None:
     """Сохранить места в файл"""
-    save_json(ROOMS_FILE, list(rooms.values()))
+    save_json(ROOMS_FILE, [room.to_data() for room in rooms])
 
 
-def load_pets() -> dict[int, dict]:
-    """Загрузить питомцев и вернуть словарь, ключ это идентификатор"""
-    return {pet["id"]: pet for pet in load_json(PETS_FILE)}
+def load_pets(users: list[User]) -> list[Pet]:
+    """Загрузить питомцев и связать каждого с объектом владельца"""
+    pets = []
+    for item in load_json(PETS_FILE):
+        owner = find_user_by_id(users, item.get("owner_id"))
+        if owner is None:
+            report_skipped(PETS_FILE, item)
+            continue
+        pets.append(Pet.from_data(item, owner))
+    return pets
 
 
-def save_pets(pets: dict[int, dict]) -> None:
+def save_pets(pets: list[Pet]) -> None:
     """Сохранить питомцев в файл"""
-    save_json(PETS_FILE, list(pets.values()))
+    save_json(PETS_FILE, [pet.to_data() for pet in pets])
 
 
-def load_bookings() -> list[dict]:
-    """Загрузить бронирования и вернуть список"""
-    return load_json(BOOKINGS_FILE)
+def load_bookings(pets: list[Pet], rooms: list[Room]) -> list[Booking]:
+    """Загрузить бронирования и связать их с питомцами и местами"""
+    bookings = []
+    for item in load_json(BOOKINGS_FILE):
+        pet = find_pet_by_id(pets, item.get("pet_id"))
+        room = find_room_by_id(rooms, item.get("room_id"))
+        if pet is None or room is None:
+            report_skipped(BOOKINGS_FILE, item)
+            continue
+        bookings.append(Booking.from_data(item, pet, room))
+    return bookings
 
 
-def save_bookings(bookings: list[dict]) -> None:
+def save_bookings(bookings: list[Booking]) -> None:
     """Сохранить бронирования в файл"""
-    save_json(BOOKINGS_FILE, bookings)
+    save_json(BOOKINGS_FILE, [booking.to_data() for booking in bookings])

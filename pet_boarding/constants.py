@@ -3,6 +3,7 @@ from pathlib import Path
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
 ROOMS_FILE = DATA_DIR / "rooms.json"
+USERS_FILE = DATA_DIR / "users.json"
 PETS_FILE = DATA_DIR / "pets.json"
 BOOKINGS_FILE = DATA_DIR / "bookings.json"
 

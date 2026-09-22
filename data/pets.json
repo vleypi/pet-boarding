@@ -6,7 +6,7 @@
         "age_months": 18,
         "weight_kg": 4.5,
         "is_vaccinated": true,
-        "owner": "Иванова Анна"
+        "owner_id": 1
     },
     {
         "id": 2,
@@ -15,7 +15,7 @@
         "age_months": 36,
         "weight_kg": 24.0,
         "is_vaccinated": true,
-        "owner": "Петров Сергей"
+        "owner_id": 2
     },
     {
         "id": 3,
@@ -24,6 +24,6 @@
         "age_months": 8,
         "weight_kg": 12.5,
         "is_vaccinated": false,
-        "owner": "Смирнова Ольга"
+        "owner_id": 3
     }
 ]

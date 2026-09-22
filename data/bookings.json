@@ -4,6 +4,7 @@
         "pet_id": 1,
         "room_id": 1,
         "check_in": "2026-10-01",
-        "check_out": "2026-10-08"
+        "check_out": "2026-10-08",
+        "is_cancelled": false
     }
 ]
