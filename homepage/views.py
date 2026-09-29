@@ -72,6 +72,22 @@ def status_badge(booking: Booking) -> str:
     return f'<span class="badge {color}">{booking.status}</span>'
 
 
+def object_link(route_name: str, object_id: int, text: str) -> str:
+    """Собрать ссылку на страницу объекта с экранированным текстом"""
+    url = reverse(route_name, args=[object_id])
+    return f'<a href="{url}">{escape(text)}</a>'
+
+
+def empty_item(text: str) -> str:
+    """Собрать пункт списка для пустого набора данных"""
+    return f'<li class="list-group-item text-muted">{text}</li>'
+
+
+def empty_row(columns: int, text: str) -> str:
+    """Собрать строку таблицы для пустого набора данных"""
+    return f'<tr><td colspan="{columns}" class="text-muted">{text}</td></tr>'
+
+
 def back_link(route_name: str, label: str) -> str:
     """Собрать кнопку возврата к списку раздела"""
     url = reverse(route_name)

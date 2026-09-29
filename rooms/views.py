@@ -1,11 +1,18 @@
 from datetime import timedelta
 
 from django.http import HttpRequest, HttpResponse
-from django.urls import reverse
 from django.utils import timezone
 from django.utils.html import escape
 
-from homepage.views import back_link, format_period, not_found, page
+from homepage.views import (
+    back_link,
+    empty_item,
+    empty_row,
+    format_period,
+    not_found,
+    object_link,
+    page,
+)
 from src.models import Booking, Room
 from src.models.bookings import active_bookings_for_room, is_room_available
 from src.models.rooms import find_room_by_id, sort_rooms_by_price
@@ -14,9 +21,8 @@ from src.storage import load_all, load_rooms
 
 def room_row(room: Room) -> str:
     """Собрать строку таблицы мест"""
-    url = reverse("room_detail", args=[room.id])
     return (
-        f'<tr><td><a href="{url}">{escape(room.name)}</a></td>'
+        f"<tr><td>{object_link('room_detail', room.id, room.name)}</td>"
         f"<td>{room.size}</td>"
         f'<td class="text-end">{room.price_per_night}</td></tr>'
     )
@@ -24,19 +30,15 @@ def room_row(room: Room) -> str:
 
 def room_booking_item(booking: Booking) -> str:
     """Собрать пункт списка бронирований места"""
-    url = reverse("booking_detail", args=[booking.id])
-    return (
-        f'<li class="list-group-item"><a href="{url}">'
-        f"{escape(booking.pet.name)}</a>: {format_period(booking)}</li>"
-    )
+    pet = object_link("booking_detail", booking.id, booking.pet.name)
+    return f'<li class="list-group-item">{pet}: {format_period(booking)}</li>'
 
 
 def room_list(request: HttpRequest) -> HttpResponse:
     """Список мест, упорядоченный по тарифу"""
     rooms = sort_rooms_by_price(load_rooms())
     rows = "".join(room_row(room) for room in rooms)
-    if not rows:
-        rows = '<tr><td colspan="3" class="text-muted">Мест нет</td></tr>'
+    rows = rows or empty_row(3, "Мест нет")
     content = f"""
 <h1 class="h2 mb-3">Места</h1>
 <div class="table-responsive">
@@ -62,13 +64,10 @@ def room_detail(request: HttpRequest, room_id: int) -> HttpResponse:
     is_free = is_room_available(bookings, room, today, tomorrow)
     status = "свободно сегодня" if is_free else "занято сегодня"
     badge = "text-bg-success" if is_free else "text-bg-danger"
-
     items = "".join(
         room_booking_item(booking)
         for booking in active_bookings_for_room(bookings, room)
-    )
-    if not items:
-        items = '<li class="list-group-item text-muted">Бронирований нет</li>'
+    ) or empty_item("Бронирований нет")
 
     content = f"""
 <div class="card mb-4"><div class="card-body">

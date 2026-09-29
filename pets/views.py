@@ -1,11 +1,13 @@
 from django.http import HttpRequest, HttpResponse
-from django.urls import reverse
 from django.utils.html import escape
 
 from homepage.views import (
     back_link,
+    empty_item,
+    empty_row,
     format_period,
     not_found,
+    object_link,
     page,
     status_badge,
 )
@@ -18,9 +20,8 @@ from src.storage import load_all, load_pets, load_users
 
 def pet_row(pet: Pet) -> str:
     """Собрать строку таблицы питомцев"""
-    url = reverse("pet_detail", args=[pet.id])
     return (
-        f'<tr><td><a href="{url}">{escape(pet.name)}</a></td>'
+        f"<tr><td>{object_link('pet_detail', pet.id, pet.name)}</td>"
         f"<td>{escape(pet.species)}</td>"
         f'<td class="text-end">{pet.weight_kg}</td>'
         f"<td>{escape(pet.owner.name)}</td></tr>"
@@ -40,34 +41,28 @@ def acceptance_badge(pet: Pet) -> str:
 
 def room_item(room: Room) -> str:
     """Собрать пункт списка подходящих мест"""
-    url = reverse("room_detail", args=[room.id])
+    link = object_link("room_detail", room.id, room.name)
     return (
-        f'<li class="list-group-item"><a href="{url}">'
-        f"{escape(room.name)}</a>, {room.price_per_night} ₽ в сутки</li>"
+        f'<li class="list-group-item">{link}, '
+        f"{room.price_per_night} ₽ в сутки</li>"
     )
 
 
 def pet_booking_item(booking: Booking) -> str:
     """Собрать пункт истории бронирований питомца"""
-    url = reverse("booking_detail", args=[booking.id])
+    room = object_link("booking_detail", booking.id, booking.room.name)
     return (
         '<li class="list-group-item d-flex justify-content-between">'
-        f'<span><a href="{url}">{escape(booking.room.name)}</a>, '
-        f"{format_period(booking)}</span>{status_badge(booking)}</li>"
+        f"<span>{room}, {format_period(booking)}</span>"
+        f"{status_badge(booking)}</li>"
     )
-
-
-def empty_item(text: str) -> str:
-    """Собрать пункт списка для пустого набора данных"""
-    return f'<li class="list-group-item text-muted">{text}</li>'
 
 
 def pet_list(request: HttpRequest) -> HttpResponse:
     """Список питомцев, упорядоченный по весу"""
     pets = sort_pets_by_weight(load_pets(load_users()))
     rows = "".join(pet_row(pet) for pet in pets)
-    if not rows:
-        rows = '<tr><td colspan="4" class="text-muted">Питомцев нет</td></tr>'
+    rows = rows or empty_row(4, "Питомцев нет")
     content = f"""
 <h1 class="h2 mb-3">Питомцы</h1>
 <div class="table-responsive">
@@ -89,6 +84,7 @@ def pet_detail(request: HttpRequest, pet_id: int) -> HttpResponse:
         return not_found("Питомец не найден", "pet_list", "К списку питомцев")
 
     vaccinated = "есть" if pet.is_vaccinated else "нет"
+    owner = f"{escape(pet.owner.name)}, {escape(pet.owner.phone)}"
     rooms_items = "".join(
         room_item(room) for room in filter_rooms_for_pet(rooms, pet)
     ) or empty_item("Подходящих мест нет")
@@ -104,8 +100,7 @@ def pet_detail(request: HttpRequest, pet_id: int) -> HttpResponse:
 <p class="card-text mb-1">Возраст: {pet.age_months} месяцев</p>
 <p class="card-text mb-1">Вес: {pet.weight_kg} кг</p>
 <p class="card-text mb-1">Прививки: {vaccinated}</p>
-<p class="card-text mb-3">Владелец: {escape(pet.owner.name)},
-{escape(pet.owner.phone)}</p>
+<p class="card-text mb-3">Владелец: {owner}</p>
 {acceptance_badge(pet)}
 </div></div>
 <h2 class="h5">Подходящие места: {pet.required_room_size()}</h2>
