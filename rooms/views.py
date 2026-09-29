@@ -4,7 +4,7 @@ from django.http import HttpRequest, HttpResponse
 from django.utils import timezone
 from django.utils.html import escape
 
-from homepage.views import (
+from homepage.layout import (
     back_link,
     empty_item,
     empty_row,
