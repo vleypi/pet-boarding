@@ -12,6 +12,7 @@ from src.exceptions import (
 )
 from src.models import Booking, Pet
 from src.models.bookings import (
+    active_bookings_for_room,
     cancel_booking,
     create_booking,
     get_statistics,
@@ -145,3 +146,14 @@ def test_statistics_counts_only_active_income(
     assert stats["active"] == 1
     assert stats["cancelled"] == 1
     assert stats["income"] == 5600
+
+
+def test_active_bookings_for_room(cat, dog, small_room, large_room):
+    """Для места отбираются только его активные брони по дате заезда"""
+    bookings = []
+    later = create_booking(bookings, cat, small_room, OCT_8, OCT_12)
+    earlier = create_booking(bookings, cat, small_room, OCT_1, OCT_3)
+    cancelled = create_booking(bookings, cat, small_room, OCT_3, OCT_5)
+    cancelled.cancel()
+    create_booking(bookings, dog, large_room, OCT_1, OCT_8)
+    assert active_bookings_for_room(bookings, small_room) == [earlier, later]

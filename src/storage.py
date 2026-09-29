@@ -97,3 +97,12 @@ def load_bookings(pets: list[Pet], rooms: list[Room]) -> list[Booking]:
 def save_bookings(bookings: list[Booking]) -> None:
     """Сохранить бронирования в файл"""
     save_json(BOOKINGS_FILE, [booking.to_data() for booking in bookings])
+
+
+def load_all() -> tuple[list[User], list[Room], list[Pet], list[Booking]]:
+    """Загрузить все данные и восстановить связи между объектами"""
+    users = load_users()
+    rooms = load_rooms()
+    pets = load_pets(users)
+    bookings = load_bookings(pets, rooms)
+    return users, rooms, pets, bookings

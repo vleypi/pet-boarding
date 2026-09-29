@@ -169,6 +169,18 @@ def sort_bookings_by_date(bookings: list[Booking]) -> list[Booking]:
     return sorted(bookings, key=lambda booking: booking.check_in)
 
 
+def active_bookings_for_room(
+    bookings: list[Booking],
+    room: Room,
+) -> list[Booking]:
+    """Вернуть активные бронирования места по дате заезда"""
+    return sort_bookings_by_date([
+        booking
+        for booking in bookings
+        if booking.room.id == room.id and not booking.is_cancelled
+    ])
+
+
 def get_statistics(bookings: list[Booking]) -> dict:
     """Собрать статистику по бронированиям"""
     active = [booking for booking in bookings if not booking.is_cancelled]

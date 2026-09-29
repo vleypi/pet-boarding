@@ -60,6 +60,21 @@ def page(title: str, content: str) -> str:
 </html>"""
 
 
+def back_link(route_name: str, label: str) -> str:
+    """Собрать кнопку возврата к списку раздела"""
+    url = reverse(route_name)
+    return f'<a class="btn btn-outline-secondary" href="{url}">{label}</a>'
+
+
+def not_found(message: str, route_name: str, label: str) -> HttpResponse:
+    """Вернуть страницу с сообщением об ошибке и кодом 404"""
+    content = f"""
+<h1 class="h3 text-danger mb-3">{escape(message)}</h1>
+{back_link(route_name, label)}
+"""
+    return HttpResponse(page(message, content), status=404)
+
+
 def index(request: HttpRequest) -> HttpResponse:
     """Главная страница: описание гостиницы, условия приёма и разделы"""
     buttons = "".join(

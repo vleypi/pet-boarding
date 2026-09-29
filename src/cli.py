@@ -234,10 +234,7 @@ def show_statistics(
 
 def run() -> None:
     """Загрузить данные и запустить меню приложения"""
-    users = storage.load_users()
-    rooms = storage.load_rooms()
-    pets = storage.load_pets(users)
-    bookings = storage.load_bookings(pets, rooms)
+    users, rooms, pets, bookings = storage.load_all()
 
     while True:
         print(MENU)
