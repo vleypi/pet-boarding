@@ -169,6 +169,13 @@ def sort_bookings_by_date(bookings: list[Booking]) -> list[Booking]:
     return sorted(bookings, key=lambda booking: booking.check_in)
 
 
+def bookings_for_pet(bookings: list[Booking], pet: Pet) -> list[Booking]:
+    """Вернуть все бронирования питомца, включая отменённые, по дате заезда"""
+    return sort_bookings_by_date(
+        [booking for booking in bookings if booking.pet.id == pet.id]
+    )
+
+
 def active_bookings_for_room(
     bookings: list[Booking],
     room: Room,

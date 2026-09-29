@@ -13,6 +13,7 @@ from src.exceptions import (
 from src.models import Booking, Pet
 from src.models.bookings import (
     active_bookings_for_room,
+    bookings_for_pet,
     cancel_booking,
     create_booking,
     get_statistics,
@@ -157,3 +158,13 @@ def test_active_bookings_for_room(cat, dog, small_room, large_room):
     cancelled.cancel()
     create_booking(bookings, dog, large_room, OCT_1, OCT_8)
     assert active_bookings_for_room(bookings, small_room) == [earlier, later]
+
+
+def test_bookings_for_pet_include_cancelled(cat, dog, small_room, large_room):
+    """История питомца содержит и отменённые брони, по дате заезда"""
+    bookings = []
+    later = create_booking(bookings, cat, small_room, OCT_8, OCT_12)
+    cancelled = create_booking(bookings, cat, small_room, OCT_1, OCT_3)
+    cancelled.cancel()
+    create_booking(bookings, dog, large_room, OCT_1, OCT_8)
+    assert bookings_for_pet(bookings, cat) == [cancelled, later]

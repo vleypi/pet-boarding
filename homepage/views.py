@@ -11,6 +11,7 @@ from src.constants import (
     SIZE_SMALL,
     SMALL_ROOM_MAX_WEIGHT,
 )
+from src.models import Booking
 
 BOOTSTRAP_CSS = (
     "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
@@ -58,6 +59,17 @@ def page(title: str, content: str) -> str:
 <main class="container pb-5">{content}</main>
 </body>
 </html>"""
+
+
+def format_period(booking: Booking) -> str:
+    """Вернуть период проживания с датами в формате ДД.ММ.ГГГГ"""
+    return f"с {booking.check_in:%d.%m.%Y} по {booking.check_out:%d.%m.%Y}"
+
+
+def status_badge(booking: Booking) -> str:
+    """Собрать бейдж со статусом бронирования"""
+    color = "text-bg-secondary" if booking.is_cancelled else "text-bg-success"
+    return f'<span class="badge {color}">{booking.status}</span>'
 
 
 def back_link(route_name: str, label: str) -> str:

@@ -5,7 +5,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.html import escape
 
-from homepage.views import back_link, not_found, page
+from homepage.views import back_link, format_period, not_found, page
 from src.models import Booking, Room
 from src.models.bookings import active_bookings_for_room, is_room_available
 from src.models.rooms import find_room_by_id, sort_rooms_by_price
@@ -27,8 +27,7 @@ def room_booking_item(booking: Booking) -> str:
     url = reverse("booking_detail", args=[booking.id])
     return (
         f'<li class="list-group-item"><a href="{url}">'
-        f"{escape(booking.pet.name)}</a>: "
-        f"с {booking.check_in:%d.%m.%Y} по {booking.check_out:%d.%m.%Y}</li>"
+        f"{escape(booking.pet.name)}</a>: {format_period(booking)}</li>"
     )
 
 
