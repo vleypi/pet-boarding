@@ -21,7 +21,7 @@ from src.storage import load_all, load_pets, load_users
 def pet_row(pet: Pet) -> str:
     """Собрать строку таблицы питомцев"""
     return (
-        f"<tr><td>{object_link('pet_detail', pet.id, pet.name)}</td>"
+        f"<tr><td>{object_link('pets:detail', pet.id, pet.name)}</td>"
         f"<td>{escape(pet.species)}</td>"
         f'<td class="text-end">{pet.weight_kg}</td>'
         f"<td>{escape(pet.owner.name)}</td></tr>"
@@ -41,7 +41,7 @@ def acceptance_badge(pet: Pet) -> str:
 
 def room_item(room: Room) -> str:
     """Собрать пункт списка подходящих мест"""
-    link = object_link("room_detail", room.id, room.name)
+    link = object_link("rooms:detail", room.id, room.name)
     return (
         f'<li class="list-group-item">{link}, '
         f"{room.price_per_night} ₽ в сутки</li>"
@@ -50,7 +50,7 @@ def room_item(room: Room) -> str:
 
 def pet_booking_item(booking: Booking) -> str:
     """Собрать пункт истории бронирований питомца"""
-    room = object_link("booking_detail", booking.id, booking.room.name)
+    room = object_link("bookings:detail", booking.id, booking.room.name)
     return (
         '<li class="list-group-item d-flex justify-content-between">'
         f"<span>{room}, {format_period(booking)}</span>"
@@ -81,7 +81,7 @@ def pet_detail(request: HttpRequest, pet_id: int) -> HttpResponse:
     _, rooms, pets, bookings = load_all()
     pet = find_pet_by_id(pets, pet_id)
     if pet is None:
-        return not_found("Питомец не найден", "pet_list", "К списку питомцев")
+        return not_found("Питомец не найден", "pets:list", "К списку питомцев")
 
     vaccinated = "есть" if pet.is_vaccinated else "нет"
     owner = f"{escape(pet.owner.name)}, {escape(pet.owner.phone)}"
@@ -107,6 +107,6 @@ def pet_detail(request: HttpRequest, pet_id: int) -> HttpResponse:
 <ul class="list-group mb-4">{rooms_items}</ul>
 <h2 class="h5">История бронирований</h2>
 <ul class="list-group mb-4">{history}</ul>
-{back_link("pet_list", "К списку питомцев")}
+{back_link("pets:list", "К списку питомцев")}
 """
     return HttpResponse(page(pet.name, content))

@@ -17,9 +17,9 @@ from src.storage import load_all
 
 def booking_row(booking: Booking) -> str:
     """Собрать строку таблицы бронирований"""
-    number = object_link("booking_detail", booking.id, f"№ {booking.id}")
-    pet = object_link("pet_detail", booking.pet.id, booking.pet.name)
-    room = object_link("room_detail", booking.room.id, booking.room.name)
+    number = object_link("bookings:detail", booking.id, f"№ {booking.id}")
+    pet = object_link("pets:detail", booking.pet.id, booking.pet.name)
+    room = object_link("rooms:detail", booking.room.id, booking.room.name)
     return (
         f"<tr><td>{number}</td><td>{pet}</td><td>{room}</td>"
         f"<td>{format_period(booking)}</td>"
@@ -53,13 +53,13 @@ def booking_detail(request: HttpRequest, booking_id: int) -> HttpResponse:
     if booking is None:
         return not_found(
             "Бронирование не найдено",
-            "booking_list",
+            "bookings:list",
             "К списку бронирований",
         )
 
     title = f"Бронирование № {booking.id}"
-    pet = object_link("pet_detail", booking.pet.id, booking.pet.name)
-    room = object_link("room_detail", booking.room.id, booking.room.name)
+    pet = object_link("pets:detail", booking.pet.id, booking.pet.name)
+    room = object_link("rooms:detail", booking.room.id, booking.room.name)
     owner = booking.pet.owner
     contacts = f"{escape(owner.name)}, {escape(owner.phone)}"
     content = f"""
@@ -73,6 +73,6 @@ def booking_detail(request: HttpRequest, booking_id: int) -> HttpResponse:
 <p class="card-text mb-3">Стоимость: {booking.cost} ₽</p>
 {status_badge(booking)}
 </div></div>
-{back_link("booking_list", "К списку бронирований")}
+{back_link("bookings:list", "К списку бронирований")}
 """
     return HttpResponse(page(title, content))

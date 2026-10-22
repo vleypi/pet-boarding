@@ -14,9 +14,9 @@ body { background-color: #fdfaf6; }
 """
 
 SECTIONS = (
-    ("room_list", "Места"),
-    ("pet_list", "Питомцы"),
-    ("booking_list", "Бронирования"),
+    ("rooms:list", "Места"),
+    ("pets:list", "Питомцы"),
+    ("bookings:list", "Бронирования"),
 )
 
 
@@ -43,7 +43,7 @@ def page(title: str, content: str) -> str:
 <header class="border-bottom bg-white mb-4">
 <nav class="container d-flex flex-wrap align-items-center gap-3 py-3">
 <a class="brand fw-bold text-decoration-none me-auto"
-   href="{reverse("index")}">Передержка</a>
+   href="{reverse("homepage:index")}">Передержка</a>
 {navigation()}
 </nav>
 </header>

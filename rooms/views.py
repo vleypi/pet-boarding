@@ -22,7 +22,7 @@ from src.storage import load_all, load_rooms
 def room_row(room: Room) -> str:
     """Собрать строку таблицы мест"""
     return (
-        f"<tr><td>{object_link('room_detail', room.id, room.name)}</td>"
+        f"<tr><td>{object_link('rooms:detail', room.id, room.name)}</td>"
         f"<td>{room.size}</td>"
         f'<td class="text-end">{room.price_per_night}</td></tr>'
     )
@@ -30,7 +30,7 @@ def room_row(room: Room) -> str:
 
 def room_booking_item(booking: Booking) -> str:
     """Собрать пункт списка бронирований места"""
-    pet = object_link("booking_detail", booking.id, booking.pet.name)
+    pet = object_link("bookings:detail", booking.id, booking.pet.name)
     return f'<li class="list-group-item">{pet}: {format_period(booking)}</li>'
 
 
@@ -57,7 +57,7 @@ def room_detail(request: HttpRequest, room_id: int) -> HttpResponse:
     _, rooms, _, bookings = load_all()
     room = find_room_by_id(rooms, room_id)
     if room is None:
-        return not_found("Место не найдено", "room_list", "К списку мест")
+        return not_found("Место не найдено", "rooms:list", "К списку мест")
 
     today = timezone.localdate()
     tomorrow = today + timedelta(days=1)
@@ -78,6 +78,6 @@ def room_detail(request: HttpRequest, room_id: int) -> HttpResponse:
 </div></div>
 <h2 class="h5">Активные бронирования</h2>
 <ul class="list-group mb-4">{items}</ul>
-{back_link("room_list", "К списку мест")}
+{back_link("rooms:list", "К списку мест")}
 """
     return HttpResponse(page(room.name, content))
