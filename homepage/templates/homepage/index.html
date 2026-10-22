@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Главная | Передержка{% endblock %}
+
+{% block content %}
+    <h1 class="display-5 brand">Передержка домашних животных</h1>
+    <p class="lead">Гостиница для кошек и собак на время отъезда владельцев.</p>
+
+    <div class="mb-4">
+        <a class="btn btn-primary me-2 mb-2" href="{% url 'rooms:list' %}">Места</a>
+        <a class="btn btn-primary me-2 mb-2" href="{% url 'pets:list' %}">Питомцы</a>
+        <a class="btn btn-primary mb-2" href="{% url 'bookings:list' %}">Бронирования</a>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h2 class="h5 card-title">Условия приёма</h2>
+                    <ul class="mb-0">
+                        <li>принимаем: {{ species|join:" и " }}</li>
+                        <li>возраст от {{ min_age_months }} месяцев</li>
+                        <li>обязательны прививки</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h2 class="h5 card-title">Размер места по весу питомца</h2>
+                    <ul class="mb-0">
+                        <li>{{ size_small }}: до {{ small_max }} кг</li>
+                        <li>{{ size_medium }}: от {{ small_max }} до {{ medium_max }} кг</li>
+                        <li>{{ size_large }}: от {{ medium_max }} кг</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

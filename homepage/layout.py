@@ -1,4 +1,5 @@
 from django.http import HttpResponse
+from django.templatetags.static import static
 from django.urls import reverse
 from django.utils.html import escape
 
@@ -7,11 +8,6 @@ from src.models import Booking
 BOOTSTRAP_CSS = (
     "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
 )
-
-PAGE_STYLE = """
-body { background-color: #fdfaf6; }
-.brand { color: #8a4b2d; }
-"""
 
 SECTIONS = (
     ("rooms:list", "Места"),
@@ -37,7 +33,7 @@ def page(title: str, content: str) -> str:
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{escape(title)}</title>
 <link rel="stylesheet" href="{BOOTSTRAP_CSS}">
-<style>{PAGE_STYLE}</style>
+<link rel="stylesheet" href="{static("homepage/css/style.css")}">
 </head>
 <body>
 <header class="border-bottom bg-white mb-4">
