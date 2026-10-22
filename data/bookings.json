@@ -6,5 +6,45 @@
         "check_in": "2026-10-01",
         "check_out": "2026-10-08",
         "is_cancelled": false
+    },
+    {
+        "id": 2,
+        "pet_id": 2,
+        "room_id": 5,
+        "check_in": "2026-10-03",
+        "check_out": "2026-10-10",
+        "is_cancelled": false
+    },
+    {
+        "id": 3,
+        "pet_id": 4,
+        "room_id": 2,
+        "check_in": "2026-10-05",
+        "check_out": "2026-10-09",
+        "is_cancelled": false
+    },
+    {
+        "id": 4,
+        "pet_id": 1,
+        "room_id": 1,
+        "check_in": "2026-11-01",
+        "check_out": "2026-11-05",
+        "is_cancelled": false
+    },
+    {
+        "id": 5,
+        "pet_id": 5,
+        "room_id": 6,
+        "check_in": "2026-10-20",
+        "check_out": "2026-10-27",
+        "is_cancelled": false
+    },
+    {
+        "id": 6,
+        "pet_id": 2,
+        "room_id": 5,
+        "check_in": "2026-11-10",
+        "check_out": "2026-11-12",
+        "is_cancelled": true
     }
 ]

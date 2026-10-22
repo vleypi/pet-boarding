@@ -3,8 +3,21 @@
 {% block title %}Места | Передержка{% endblock %}
 
 {% block content %}
-    <h1 class="h2 mb-2">Места</h1>
-    <p class="text-muted">Всего мест: {{ rooms|length }}</p>
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+        <h1 class="h2 mb-0">Места</h1>
+        <a class="btn btn-primary" href="{% url 'rooms:available' %}">Найти свободное место</a>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2 my-3">
+        <a class="btn btn-sm {% if not size %}btn-secondary{% else %}btn-outline-secondary{% endif %}"
+           href="{% url 'rooms:list' %}">все</a>
+        {% for item in sizes %}
+            <a class="btn btn-sm {% if item == size %}btn-secondary{% else %}btn-outline-secondary{% endif %}"
+               href="{% url 'rooms:list' %}?size={{ item|urlencode }}">{{ item }}</a>
+        {% endfor %}
+    </div>
+
+    <p class="text-muted">Найдено мест: {{ rooms|length }}</p>
 
     <div class="row g-3">
         {% for room in rooms %}

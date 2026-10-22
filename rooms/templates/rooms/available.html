@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Свободные места | Передержка{% endblock %}
+
+{% block content %}
+    <h1 class="h2 mb-3">Свободные места</h1>
+
+    <form method="get" class="row g-2 align-items-end mb-4">
+        <div class="col-sm-4 col-lg-3">
+            <label class="form-label" for="check_in">Заезд</label>
+            <input class="form-control" type="date" id="check_in" name="check_in" value="{{ check_in }}" required>
+        </div>
+        <div class="col-sm-4 col-lg-3">
+            <label class="form-label" for="check_out">Выезд</label>
+            <input class="form-control" type="date" id="check_out" name="check_out" value="{{ check_out }}" required>
+        </div>
+        <div class="col-sm-4 col-lg-3">
+            <label class="form-label" for="size">Размер</label>
+            <select class="form-select" id="size" name="size">
+                <option value="">любой</option>
+                {% for item in sizes %}
+                    <option value="{{ item }}" {% if item == size %}selected{% endif %}>{{ item }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-auto">
+            <button class="btn btn-primary" type="submit">Найти</button>
+        </div>
+    </form>
+
+    {% if error %}
+        <p class="text-danger">Ошибка: {{ error }}</p>
+    {% elif rooms is not None %}
+        <p class="text-muted">Свободно мест: {{ rooms|length }}</p>
+        <div class="row g-3">
+            {% for room in rooms %}
+                <div class="col-sm-6 col-lg-4">
+                    {% include "rooms/includes/room_card.html" %}
+                </div>
+            {% empty %}
+                <p>На выбранный период свободных мест нет</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <a class="btn btn-outline-secondary mt-4" href="{% url 'rooms:list' %}">К списку мест</a>
+{% endblock %}

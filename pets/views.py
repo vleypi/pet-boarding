@@ -1,15 +1,18 @@
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
 
+from db.database import fetch_all
 from src.models.bookings import bookings_for_pet
-from src.models.pets import find_pet_by_id, sort_pets_by_weight
+from src.models.pets import find_pet_by_id
 from src.models.rooms import filter_rooms_for_pet
-from src.storage import load_all, load_pets, load_users
+from src.storage import load_all
 
 
 def pet_list(request: HttpRequest) -> HttpResponse:
-    """Список питомцев, упорядоченный по весу"""
-    context = {"pets": sort_pets_by_weight(load_pets(load_users()))}
+    """Список питомцев из SQLite, по выбору только те, кого можно принять"""
+    only_accepted = request.GET.get("accepted") == "1"
+    query = "acceptable_pets" if only_accepted else "pet_list"
+    context = {"pets": fetch_all(query), "only_accepted": only_accepted}
     return render(request, "pets/pet_list.html", context)
 
 

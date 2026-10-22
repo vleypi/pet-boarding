@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}Статистика | Передержка{% endblock %}
+
+{% block content %}
+    <h1 class="h2 mb-3">Статистика</h1>
+
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3"><div class="card stat-card"><div class="card-body">
+            <div class="stat-value">{{ summary.bookings_count }}</div><div class="text-muted">активных бронирований</div>
+        </div></div></div>
+        <div class="col-6 col-lg-3"><div class="card stat-card"><div class="card-body">
+            <div class="stat-value">{{ summary.nights }}</div><div class="text-muted">суток забронировано</div>
+        </div></div></div>
+        <div class="col-6 col-lg-3"><div class="card stat-card"><div class="card-body">
+            <div class="stat-value">{{ summary.average_nights|floatformat:1 }}</div><div class="text-muted">средний срок, суток</div>
+        </div></div></div>
+        <div class="col-6 col-lg-3"><div class="card stat-card"><div class="card-body">
+            <div class="stat-value">{{ summary.income }} ₽</div><div class="text-muted">выручка</div>
+        </div></div></div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <h2 class="h5">Бронирования по местам</h2>
+            <table class="table bg-white">
+                <thead><tr><th>Место</th><th>Размер</th><th class="text-end">Броней</th><th class="text-end">Суток</th></tr></thead>
+                <tbody>
+                    {% for row in per_room %}
+                        <tr>
+                            <td><a href="{% url 'rooms:detail' row.id %}">{{ row.name }}</a></td>
+                            <td>{{ row.size }}</td>
+                            <td class="text-end">{{ row.bookings_count }}</td>
+                            <td class="text-end">{{ row.nights }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="4" class="text-muted">Данных нет</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="col-lg-6">
+            <h2 class="h5">Выручка по размерам мест</h2>
+            <table class="table bg-white">
+                <thead><tr><th>Размер</th><th class="text-end">Броней</th><th class="text-end">Выручка, ₽</th></tr></thead>
+                <tbody>
+                    {% for row in per_size %}
+                        <tr><td>{{ row.size }}</td><td class="text-end">{{ row.bookings_count }}</td><td class="text-end">{{ row.income }}</td></tr>
+                    {% empty %}
+                        <tr><td colspan="3" class="text-muted">Данных нет</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <h2 class="h5">Питомцы по видам</h2>
+            <table class="table bg-white">
+                <thead><tr><th>Вид</th><th class="text-end">Питомцев</th><th class="text-end">Средний вес, кг</th></tr></thead>
+                <tbody>
+                    {% for row in per_species %}
+                        <tr><td>{{ row.species|capfirst }}</td><td class="text-end">{{ row.pets_count }}</td><td class="text-end">{{ row.average_weight|floatformat:1 }}</td></tr>
+                    {% empty %}
+                        <tr><td colspan="3" class="text-muted">Данных нет</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="col-lg-6">
+            <h2 class="h5">Популярные места</h2>
+            <form method="get" class="d-flex align-items-center gap-2 mb-2">
+                <label for="min">от</label>
+                <input class="form-control form-control-sm stat-threshold" type="number" min="1" id="min" name="min" value="{{ threshold }}">
+                <span>броней</span>
+                <button class="btn btn-sm btn-outline-primary" type="submit">Показать</button>
+            </form>
+            <ul class="list-group">
+                {% for row in popular %}
+                    <li class="list-group-item d-flex justify-content-between">
+                        <a href="{% url 'rooms:detail' row.id %}">{{ row.name }}</a>
+                        <span>{{ row.bookings_count }}</span>
+                    </li>
+                {% empty %}
+                    <li class="list-group-item text-muted">Таких мест нет</li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div class="col-lg-6">
+            <h2 class="h5">Владельцы с несколькими питомцами</h2>
+            <ul class="list-group">
+                {% for row in owners %}
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>{{ row.name }}, {{ row.phone }}</span>
+                        <span>{{ row.pets_count }}</span>
+                    </li>
+                {% empty %}
+                    <li class="list-group-item text-muted">Таких владельцев нет</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+{% endblock %}

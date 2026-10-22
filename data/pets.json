@@ -25,5 +25,23 @@
         "weight_kg": 12.5,
         "is_vaccinated": false,
         "owner_id": 3
+    },
+    {
+        "id": 4,
+        "name": "Тишка",
+        "species": "кошка",
+        "age_months": 24,
+        "weight_kg": 3.2,
+        "is_vaccinated": true,
+        "owner_id": 1
+    },
+    {
+        "id": 5,
+        "name": "Граф",
+        "species": "собака",
+        "age_months": 60,
+        "weight_kg": 30.0,
+        "is_vaccinated": true,
+        "owner_id": 2
     }
 ]

@@ -9,7 +9,25 @@
     <div class="mb-4">
         <a class="btn btn-primary me-2 mb-2" href="{% url 'rooms:list' %}">Места</a>
         <a class="btn btn-primary me-2 mb-2" href="{% url 'pets:list' %}">Питомцы</a>
-        <a class="btn btn-primary mb-2" href="{% url 'bookings:list' %}">Бронирования</a>
+        <a class="btn btn-primary me-2 mb-2" href="{% url 'bookings:list' %}">Бронирования</a>
+        <a class="btn btn-outline-primary mb-2" href="{% url 'rooms:available' %}">Найти свободное место</a>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <h2 class="h5 card-title">Ближайшие заезды</h2>
+            <p class="text-muted mb-2">Активных бронирований: {{ active_count }}</p>
+            <ul class="mb-0">
+                {% for item in upcoming %}
+                    <li>
+                        {{ item.check_in }}: {{ item.pet_name }} в месте «{{ item.room_name }}»,
+                        <a href="{% url 'bookings:detail' item.id %}">бронирование № {{ item.id }}</a>
+                    </li>
+                {% empty %}
+                    <li class="text-muted">Заездов не запланировано</li>
+                {% endfor %}
+            </ul>
+        </div>
     </div>
 
     <div class="row g-3">

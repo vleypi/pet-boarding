@@ -35,3 +35,17 @@ body {
     color: #8a7b70;
     font-size: 0.9rem;
 }
+
+.stat-card {
+    border-color: #e6d9cf;
+}
+
+.stat-value {
+    color: #8a4b2d;
+    font-size: 1.6rem;
+    font-weight: 700;
+}
+
+.stat-threshold {
+    width: 5rem;
+}

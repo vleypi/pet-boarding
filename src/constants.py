@@ -6,6 +6,7 @@ ROOMS_FILE = DATA_DIR / "rooms.json"
 USERS_FILE = DATA_DIR / "users.json"
 PETS_FILE = DATA_DIR / "pets.json"
 BOOKINGS_FILE = DATA_DIR / "bookings.json"
+DB_FILE = DATA_DIR / "pet_boarding.sqlite"
 
 ENCODING = "utf-8"
 JSON_INDENT = 4
