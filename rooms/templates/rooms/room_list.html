@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}Места | Передержка{% endblock %}
+
+{% block content %}
+    <h1 class="h2 mb-2">Места</h1>
+    <p class="text-muted">Всего мест: {{ rooms|length }}</p>
+
+    <div class="row g-3">
+        {% for room in rooms %}
+            <div class="col-sm-6 col-lg-4">
+                {% include "rooms/includes/room_card.html" %}
+            </div>
+        {% empty %}
+            <p class="text-muted">Мест нет</p>
+        {% endfor %}
+    </div>
+{% endblock %}

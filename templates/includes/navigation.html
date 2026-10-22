@@ -1,7 +1,11 @@
+{% load static %}
 <header class="border-bottom bg-white mb-4">
     <nav class="container d-flex flex-wrap align-items-center gap-3 py-3">
-        <a class="brand fw-bold text-decoration-none me-auto"
-           href="{% url 'homepage:index' %}">Передержка</a>
+        <a class="brand fw-bold text-decoration-none me-auto d-flex align-items-center gap-2"
+           href="{% url 'homepage:index' %}">
+            <img class="site-logo" src="{% static 'homepage/img/logo.svg' %}" alt="Передержка">
+            Передержка
+        </a>
         <a class="link-secondary" href="{% url 'rooms:list' %}">Места</a>
         <a class="link-secondary" href="{% url 'pets:list' %}">Питомцы</a>
         <a class="link-secondary" href="{% url 'bookings:list' %}">Бронирования</a>

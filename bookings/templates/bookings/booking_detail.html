@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}{% if booking %}Бронирование № {{ booking.id }}{% else %}Бронирование не найдено{% endif %} | Передержка{% endblock %}
+
+{% block content %}
+    {% if booking %}
+        <div class="card mb-4">
+            <div class="card-body">
+                <h1 class="h3 card-title">Бронирование № {{ booking.id }}</h1>
+                <p class="card-text mb-1">
+                    Питомец: <a href="{% url 'pets:detail' booking.pet.id %}">{{ booking.pet.name }}</a>
+                </p>
+                <p class="card-text mb-1">
+                    Владелец: {{ booking.pet.owner.name }}, {{ booking.pet.owner.phone|default:"телефон не указан" }}
+                </p>
+                <p class="card-text mb-1">
+                    Место: <a href="{% url 'rooms:detail' booking.room.id %}">{{ booking.room.name }}</a>, {{ booking.room.size }}
+                </p>
+                <p class="card-text mb-1">Период: {% include "bookings/includes/booking_period.html" %}</p>
+                <p class="card-text mb-1">Срок: {{ booking.nights }} суток</p>
+                <p class="card-text mb-3">Стоимость: {{ booking.cost }} ₽</p>
+                {% include "bookings/includes/booking_status.html" %}
+            </div>
+        </div>
+    {% else %}
+        <h1 class="h3 text-danger">Бронирование не найдено</h1>
+        <p>Бронирования с таким номером нет.</p>
+    {% endif %}
+
+    <a class="btn btn-outline-secondary" href="{% url 'bookings:list' %}">К списку бронирований</a>
+{% endblock %}

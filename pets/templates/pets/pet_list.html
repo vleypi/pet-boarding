@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Питомцы | Передержка{% endblock %}
+
+{% block content %}
+    <h1 class="h2 mb-2">Питомцы</h1>
+    <p class="text-muted">Всего питомцев: {{ pets|length }}</p>
+
+    <div class="table-responsive">
+        <table class="table table-hover bg-white">
+            <thead>
+                <tr>
+                    <th>Кличка</th>
+                    <th>Вид</th>
+                    <th class="text-end">Вес, кг</th>
+                    <th>Владелец</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for pet in pets %}
+                    <tr>
+                        <td><a href="{% url 'pets:detail' pet.id %}">{{ pet.name }}</a></td>
+                        <td>{{ pet.species|capfirst }}</td>
+                        <td class="text-end">{{ pet.weight_kg|floatformat:1 }}</td>
+                        <td>{{ pet.owner.name }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="4" class="text-muted">Питомцев нет</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}{% if room %}{{ room.name }}{% else %}Место не найдено{% endif %} | Передержка{% endblock %}
+
+{% block content %}
+    {% if room %}
+        <div class="card room-card mb-4">
+            <div class="card-body">
+                <h1 class="h3 card-title">{{ room.name }}</h1>
+                <p class="card-text mb-1">Размер: {{ room.size }}</p>
+                <p class="card-text mb-3">Тариф: {{ room.price_per_night }} ₽ в сутки</p>
+                {% if is_free %}
+                    <span class="badge text-bg-success">свободно сегодня</span>
+                {% else %}
+                    <span class="badge text-bg-danger">занято сегодня</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <h2 class="h5">Активные бронирования: {{ bookings|length }}</h2>
+        <ul class="list-group mb-4">
+            {% for booking in bookings %}
+                <li class="list-group-item">
+                    <a href="{% url 'bookings:detail' booking.id %}">{{ booking.pet.name }}</a>:
+                    {% include "bookings/includes/booking_period.html" %}
+                </li>
+            {% empty %}
+                <li class="list-group-item text-muted">Бронирований нет</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <h1 class="h3 text-danger">Место не найдено</h1>
+        <p>Места с таким номером нет.</p>
+    {% endif %}
+
+    <a class="btn btn-outline-secondary" href="{% url 'rooms:list' %}">К списку мест</a>
+{% endblock %}

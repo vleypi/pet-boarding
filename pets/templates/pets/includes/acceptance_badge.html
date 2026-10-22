@@ -1,0 +1,6 @@
+{% if reason %}
+    <span class="badge text-bg-danger">нельзя принять</span>
+    <span class="text-muted">{{ reason }}</span>
+{% else %}
+    <span class="badge text-bg-success">можно принять</span>
+{% endif %}

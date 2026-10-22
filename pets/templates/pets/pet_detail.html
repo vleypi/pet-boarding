@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}{% if pet %}{{ pet.name }}{% else %}Питомец не найден{% endif %} | Передержка{% endblock %}
+
+{% block content %}
+    {% if pet %}
+        <div class="card mb-4">
+            <div class="card-body">
+                <h1 class="h3 card-title">{{ pet.name }}</h1>
+                <p class="card-text mb-1">Вид: {{ pet.species }}</p>
+                <p class="card-text mb-1">Возраст: {{ pet.age_months }} месяцев</p>
+                <p class="card-text mb-1">Вес: {{ pet.weight_kg|floatformat:1 }} кг</p>
+                <p class="card-text mb-1">Прививки: {{ pet.is_vaccinated|yesno:"есть,нет" }}</p>
+                <p class="card-text mb-3">Владелец: {{ pet.owner.name }}, {{ pet.owner.phone }}</p>
+                {% include "pets/includes/acceptance_badge.html" %}
+            </div>
+        </div>
+
+        <h2 class="h5">Подходящие места: {{ room_size }}</h2>
+        <div class="row g-3 mb-4">
+            {% for room in rooms %}
+                <div class="col-sm-6 col-lg-4">
+                    {% include "rooms/includes/room_card.html" %}
+                </div>
+            {% empty %}
+                <p class="text-muted">Подходящих мест нет</p>
+            {% endfor %}
+        </div>
+
+        <h2 class="h5">История бронирований</h2>
+        <ul class="list-group mb-4">
+            {% for booking in bookings %}
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>
+                        <a href="{% url 'bookings:detail' booking.id %}">{{ booking.room.name }}</a>,
+                        {% include "bookings/includes/booking_period.html" %}
+                    </span>
+                    {% include "bookings/includes/booking_status.html" %}
+                </li>
+            {% empty %}
+                <li class="list-group-item text-muted">Бронирований нет</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <h1 class="h3 text-danger">Питомец не найден</h1>
+        <p>Питомца с таким номером нет.</p>
+    {% endif %}
+
+    <a class="btn btn-outline-secondary" href="{% url 'pets:list' %}">К списку питомцев</a>
+{% endblock %}
