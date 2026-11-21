@@ -49,3 +49,13 @@ body {
 .stat-threshold {
     width: 5rem;
 }
+
+.room-photo {
+    max-height: 320px;
+    object-fit: cover;
+}
+
+.room-photo-thumb {
+    height: 160px;
+    object-fit: cover;
+}

@@ -33,6 +33,12 @@ class Room(models.Model):
         verbose_name="Размер",
         help_text="Малое до 5 кг, среднее до 20 кг, большое от 20 кг",
     )
+    photo = models.ImageField(
+        upload_to="rooms/",
+        blank=True,
+        verbose_name="Фото",
+        help_text="JPEG или PNG до 2 МБ",
+    )
     price_per_night = models.PositiveIntegerField(
         validators=[MinValueValidator(1)],
         verbose_name="Тариф за сутки, руб.",

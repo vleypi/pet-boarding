@@ -1,4 +1,7 @@
 <article class="card room-card h-100">
+    {% if room.photo %}
+        <img class="card-img-top room-photo-thumb" src="{{ room.photo.url }}" alt="{{ room.name }}">
+    {% endif %}
     <div class="card-body">
         <h2 class="h5 card-title">{{ room.name|default:"Без названия" }}</h2>
         <p class="card-text mb-1">Размер: {{ room.size }}</p>

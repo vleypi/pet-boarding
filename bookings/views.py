@@ -110,11 +110,15 @@ def booking_create(request: HttpRequest) -> HttpResponse:
 def booking_update(request: HttpRequest, booking_id: int) -> HttpResponse:
     """Изменение активной брони той же формой с instance"""
     booking = get_object_or_404(Booking.objects.active(), pk=booking_id)
-    form = BookingForm(request.POST or None, instance=booking)
-    if request.method == "POST" and form.is_valid():
-        form.save()
-        messages.success(request, f"Бронирование № {booking.pk} изменено")
-        return redirect(booking)
+    if request.method == "POST":
+        form = BookingForm(request.POST, instance=booking)
+        if form.is_valid():
+            form.save()
+            messages.success(request,
+                             f"Бронирование № {booking.pk} изменено")
+            return redirect(booking)
+    else:
+        form = BookingForm(instance=booking)
     context = {
         "form": form,
         "booking": booking,

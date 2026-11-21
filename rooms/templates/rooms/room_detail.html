@@ -4,6 +4,9 @@
 
 {% block content %}
     <div class="card room-card mb-4">
+        {% if room.photo %}
+            <img class="card-img-top room-photo" src="{{ room.photo.url }}" alt="{{ room.name }}">
+        {% endif %}
         <div class="card-body">
             <h1 class="h3 card-title">{{ room.name }}</h1>
             <p class="card-text mb-1">Размер: {{ room.size }}</p>
@@ -15,6 +18,7 @@
             {% endif %}
             <div class="mt-3">
                 <a class="btn btn-primary" href="{% url 'bookings:create' %}?room={{ room.slug }}">Забронировать</a>
+                <a class="btn btn-outline-secondary" href="{% url 'rooms:photo' room.slug %}">{% if room.photo %}Заменить фото{% else %}Загрузить фото{% endif %}</a>
             </div>
         </div>
     </div>

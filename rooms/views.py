@@ -1,10 +1,12 @@
 from datetime import date, timedelta
 
 from django.http import HttpRequest, HttpResponse
-from django.shortcuts import get_object_or_404, render
+from django.contrib import messages
+from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
 from bookings.models import Booking
+from rooms.forms import RoomPhotoForm
 from rooms.models import Room
 from src.constants import ROOM_SIZES
 from src.exceptions import BookingError
@@ -77,3 +79,18 @@ def room_detail(request: HttpRequest, slug: str) -> HttpResponse:
         "bookings": bookings,
     }
     return render(request, "rooms/room_detail.html", context)
+
+
+def room_photo(request: HttpRequest, slug: str) -> HttpResponse:
+    """Загрузка фото места: файл приходит в request.FILES"""
+    room = get_object_or_404(Room, slug=slug)
+    if request.method == "POST":
+        form = RoomPhotoForm(request.POST, request.FILES, instance=room)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"Фото места «{room.name}» загружено")
+            return redirect(room)
+    else:
+        form = RoomPhotoForm(instance=room)
+    return render(request, "rooms/room_photo.html",
+                  {"room": room, "form": form})

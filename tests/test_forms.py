@@ -168,3 +168,54 @@ def test_csrf_is_required(data):
     strict = Client(enforce_csrf_checks=True)
     response = strict.post(f"/bookings/{data['booking'].pk}/cancel/")
     assert response.status_code == 403
+
+
+def image_file(name="room.png", size=(40, 30)):
+    """Небольшое PNG-изображение для загрузки"""
+    from io import BytesIO
+
+    from django.core.files.uploadedfile import SimpleUploadedFile
+    from PIL import Image
+
+    buffer = BytesIO()
+    Image.new("RGB", size, (200, 120, 60)).save(buffer, format="PNG")
+    return SimpleUploadedFile(name, buffer.getvalue(),
+                              content_type="image/png")
+
+
+def test_room_photo_upload(client, data, settings, tmp_path):
+    """Фото сохраняется в MEDIA_ROOT и выводится на странице места"""
+    settings.MEDIA_ROOT = tmp_path
+    room = data["small"]
+    url = f"/rooms/{room.slug}/photo/"
+    assert client.get(url).status_code == 200
+    response = client.post(url, {"photo": image_file()})
+    assert response.status_code == 302
+    room.refresh_from_db()
+    assert room.photo.name.startswith("rooms/")
+    assert (tmp_path / room.photo.name).exists()
+    page = client.get(room.get_absolute_url()).content.decode()
+    assert room.photo.url in page
+
+
+@pytest.mark.parametrize("upload, message", [
+    (None, "Выберите файл изображения"),
+    ("text", "Загрузите правильное изображение"),
+    ("big", "Файл больше 2 МБ"),
+])
+def test_room_photo_validation(client, data, settings, tmp_path, upload,
+                               message, monkeypatch):
+    """Пустая форма, не изображение и слишком большой файл отклоняются"""
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    settings.MEDIA_ROOT = tmp_path
+    files = {}
+    if upload == "text":
+        files["photo"] = SimpleUploadedFile("a.png", b"not an image",
+                                            content_type="image/png")
+    if upload == "big":
+        monkeypatch.setattr("rooms.forms.MAX_PHOTO_SIZE", 10)
+        files["photo"] = image_file()
+    response = client.post(f"/rooms/{data['small'].slug}/photo/", files)
+    assert response.status_code == 200
+    assert message in response.content.decode()

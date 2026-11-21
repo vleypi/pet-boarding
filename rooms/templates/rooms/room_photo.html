@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}Фото: {{ room.name }} | {{ site_name }}{% endblock %}
+
+{% block content %}
+    <h1 class="h2 mb-3">Фото места «{{ room.name }}»</h1>
+
+    {% if room.photo %}
+        <img class="room-photo mb-3" src="{{ room.photo.url }}" alt="{{ room.name }}">
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data" class="row g-3" novalidate>
+        {% csrf_token %}
+        {% include "bookings/includes/form_field.html" with field=form.photo col="col-md-6" %}
+        <div class="col-12">
+            <button class="btn btn-primary" type="submit">Загрузить</button>
+            <a class="btn btn-outline-secondary" href="{{ room.get_absolute_url }}">Отмена</a>
+        </div>
+    </form>
+{% endblock %}
