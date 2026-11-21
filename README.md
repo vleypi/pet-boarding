@@ -15,9 +15,9 @@
 4. HTML: разметка страниц;
 5. CSS и Bootstrap 5.3: оформление страниц;
 6. JavaScript: небольшое поведение интерфейса;
-7. SQLite и SQL: реляционная база данных;
+7. SQLite и Django ORM: реляционная база данных, модели и миграции;
 8. JSON: исходные данные и хранилище консольной версии;
-9. pytest: автоматизированные тесты;
+9. pytest и pytest-django: автоматизированные тесты;
 10. flake8: проверка качества кода
 
 ## Целевая аудитория
@@ -55,10 +55,11 @@
 
 1. просмотр мест с фильтром по размеру и занятостью на сегодня;
 2. поиск мест, свободных на выбранный период;
-3. просмотр питомцев с фильтром «можно принять», проверкой допуска
-   и подходящими местами;
-4. просмотр бронирований со сроком, стоимостью и статусом, фильтр
-   «только активные»;
+3. просмотр питомцев с фильтром «можно принять», поиском по кличке
+   или имени владельца, проверкой допуска и подходящими местами;
+4. просмотр бронирований со сроком, стоимостью и статусом: поиск,
+   фильтры по статусу, размеру места, месту и датам заезда, сортировка
+   и постраничный вывод;
 5. статистика: выручка, загрузка мест, питомцы по видам, популярные места;
 6. ближайшие заезды на главной странице;
 7. переходы между связанными страницами: от места к бронированию,
@@ -86,15 +87,15 @@
 | `/rooms/` | `rooms.views.room_list` | места по возрастанию тарифа, фильтр `?size=` |
 | `/rooms/available/` | `rooms.views.available_rooms` | поиск мест, свободных на период |
 | `/rooms/<int:room_id>/` | `rooms.views.room_detail` | размер, тариф, занятость сегодня, активные брони |
-| `/pets/` | `pets.views.pet_list` | питомцы по весу с владельцами, фильтр `?accepted=1` |
+| `/pets/` | `pets.views.pet_list` | питомцы по весу с владельцами, фильтр `?accepted=1`, поиск `?q=` |
 | `/pets/<int:pet_id>/` | `pets.views.pet_detail` | владелец, допуск, подходящие места, история бронирований |
-| `/bookings/` | `bookings.views.booking_list` | бронирования по дате заезда, фильтр `?active=1` |
-| `/bookings/statistics/` | `bookings.views.statistics` | статистика по данным SQLite |
+| `/bookings/` | `bookings.views.booking_list` | бронирования, параметры `q`, `status`, `size`, `room`, `date_from`, `date_to`, `sort`, `page` |
+| `/bookings/statistics/` | `bookings.views.statistics` | статистика на агрегатных запросах ORM |
 | `/bookings/<int:booking_id>/` | `bookings.views.booking_detail` | питомец, владелец, место, срок, стоимость, статус |
 
-Если объекта с указанным номером нет, страница сообщает об этом и
-возвращает код 404. Адрес с буквами вместо номера тоже даёт 404: его
-не пропускает конвертер `int`.
+Если объекта с указанным номером нет, `get_object_or_404()` возвращает
+код 404 и страницу `templates/404.html` (при `DEBUG = False`). Адрес с
+буквами вместо номера тоже даёт 404: его не пропускает конвертер `int`.
 
 ## Django-проект и приложения
 
@@ -102,18 +103,19 @@
 |---|---|
 | `config` | настройки проекта и корневые маршруты |
 | `homepage` | главная страница и общий каркас всех страниц |
-| `rooms` | страницы мест |
-| `pets` | страницы питомцев |
-| `bookings` | страницы бронирований |
+| `rooms` | модель `Room` и страницы мест |
+| `pets` | модель `Pet` и страницы питомцев |
+| `bookings` | модель `Booking`, страницы бронирований и статистика |
+| `users` | модель `User`: владелец питомца или администратор |
 
-Для пользователей отдельного приложения нет: в Django есть встроенная
-модель пользователя, она понадобится вместе с регистрацией и входом.
+Модель `User` описывает пользователя предметной области и не связана со
+встроенной моделью авторизации Django.
 
-View-функции не содержат ни HTML, ни своей логики предметной области.
-Они загружают данные через `src/storage.py`, находят объект функциями
-`find_*_by_id`, вызывают методы и функции классов ПР3, складывают результат
-в контекст и передают его в шаблон через `render()`. Функция `page()`,
-которая в ПР5 собирала HTML в Python-строках, удалена.
+View-функции не содержат HTML. Они получают данные через менеджеры
+моделей (`Room.objects`, `Booking.objects`), проверяют параметры запроса,
+складывают результат в контекст и передают его в шаблон через `render()`.
+Правила предметной области (допуск питомца, подбор места, стоимость)
+находятся в методах моделей.
 
 | Компонент | Ответственность |
 |---|---|
@@ -142,13 +144,17 @@ View-функции не содержат ни HTML, ни своей логик�
 | `bookings/includes/booking_status.html` | список бронирований, страница брони, история питомца |
 | `bookings/includes/booking_period.html` | период проживания везде, где выводится бронь |
 | `pets/includes/acceptance_badge.html` | допуск питомца |
+| `includes/pagination.html` | постраничная навигация списка бронирований |
+
+Ссылки пагинации строятся тегом `{% querystring page=... %}`: он берёт
+текущие параметры запроса и меняет только номер страницы, поэтому
+поиск, фильтры и сортировка сохраняются при переходе.
 
 В шаблонах используются:
 
 1. `{{ ... }}` для вывода атрибутов объектов: `{{ booking.pet.owner.name }}`;
 2. `{% for %}` с `{% empty %}` для списков и пустых коллекций;
-3. `{% if %}` для статуса брони, занятости места, допуска питомца
-   и страниц «не найдено»;
+3. `{% if %}` для статуса брони, занятости места и допуска питомца;
 4. `{% url %}` с пространствами имён для всех ссылок;
 5. автоматическое экранирование: кличка с HTML-тегами выводится как текст
 
@@ -177,77 +183,106 @@ View-функции не содержат ни HTML, ни своей логик�
 2. `js/main.js`: подставляет текущий год в подвал;
 3. `img/logo.svg`: логотип в шапке
 
-## База данных SQLite
+## База данных и Django ORM
 
-Данные перенесены из JSON в базу `data/pet_boarding.sqlite`. С ней работают
-списки, поиск, статистика и главная страница. Страницы отдельных объектов
-пока строятся по объектам ПР3, потому что используют их методы: допуск
-питомца, подбор места, расчёт стоимости. Django ORM на этом этапе не
-используется, база подключается стандартным модулем `sqlite3`.
+С ПР9 веб-интерфейс работает с базой Django `db.sqlite3` через модели и
+ORM. База ПР7 `data/pet_boarding.sqlite` осталась источником исходных
+данных: из неё данные переносятся в таблицы, которыми управляют миграции.
+Прямых SQL-запросов в представлениях нет.
 
-### Таблицы
+### Модели
 
-| Таблица | Поля | Ключи |
+| Модель | Приложение | Поля | Связи |
+|---|---|---|---|
+| `User` | `users` | `name`, `phone`, `role` (клиент или администратор) | обратная `pets` |
+| `Room` | `rooms` | `name`, `size` (малое, среднее, большое), `price_per_night` | обратная `bookings` |
+| `Pet` | `pets` | `name`, `species`, `age_months`, `weight_kg`, `is_vaccinated` | `owner` на `User`, обратная `bookings` |
+| `Booking` | `bookings` | `check_in`, `check_out` (`DateField`), `is_cancelled` | `pet` на `Pet`, `room` на `Room` |
+
+```
+User 1 ──→ * Pet 1 ──→ * Booking * ←── 1 Room
+```
+
+1. первичный ключ `id` Django создаёт сам;
+2. все внешние ключи с `on_delete=PROTECT`: нельзя удалить владельца,
+   питомца или место, пока на них ссылаются записи, история бронирований
+   не теряется;
+3. `related_name` задаёт обратный доступ: `user.pets.all()`,
+   `room.bookings.all()`, `pet.bookings.all()`;
+4. `CheckConstraint` повторяют ограничения ПР7 на уровне базы: размер места
+   и роль из списка, положительные тариф и вес, выезд позже заезда;
+5. `choices` и `MinValueValidator` проверяют значения ещё до записи;
+6. `Meta.ordering` задаёт порядок по умолчанию, `verbose_name` подписи
+   для административной панели
+
+Методы моделей: `Room.is_suitable_for()` и `Room.cost_for()`,
+`Pet.rejection_reason()`, `Pet.can_be_accepted()` и
+`Pet.required_room_size()`, свойства `Booking.status`, `Booking.nights`,
+`Booking.cost`, метод `Booking.cancel()` с
+`save(update_fields=["is_cancelled"])`.
+
+### Миграции и перенос данных
+
+| Команда | Что делает |
+|---|---|
+| `python manage.py migrate` | создаёт таблицы по миграциям `*/migrations/0001_initial.py` |
+| `python -m db.inspect_source_db` | выводит структуру базы ПР7 и проверяет связи и форматы, ничего не меняя |
+| `python -m db.import_sqlite_to_orm` | переносит пользователей, места, питомцев и брони через ORM с прежними `id` в одной транзакции |
+| `python manage.py loaddata demo_bookings` | добавляет 10 демонстрационных броней из фикстуры для пагинации и ближайших заездов |
+
+Перенос сначала очищает таблицы ORM, поэтому повторный запуск не создаёт
+дублей. Даты из строк `ГГГГ-ММ-ДД` превращаются в `date`, числа 0 и 1 в
+`bool`. Файл `db.sqlite3` в репозиторий не входит: после клонирования он
+создаётся командами из раздела «Установка». Резервная копия
+`data/pet_boarding_backup.sqlite` тоже не коммитится.
+
+Файлы ПР7 `sql/schema.sql`, `db/database.py` и `db/import_json.py`
+сохранены: они создают исходную базу из JSON, с которой работает
+консольная версия и скрипт переноса.
+
+### Запросы ORM
+
+| Где | Выражение | Приём |
 |---|---|---|
-| `users` | `id` INTEGER, `name` TEXT, `phone` TEXT, `role` TEXT | первичный `id` |
-| `rooms` | `id` INTEGER, `name` TEXT, `size` TEXT, `price_per_night` INTEGER | первичный `id` |
-| `pets` | `id` INTEGER, `name` TEXT, `species` TEXT, `age_months` INTEGER, `weight_kg` REAL, `is_vaccinated` INTEGER, `owner_id` INTEGER | первичный `id`, внешний `owner_id` на `users.id` |
-| `bookings` | `id` INTEGER, `pet_id` INTEGER, `room_id` INTEGER, `check_in` TEXT, `check_out` TEXT, `is_cancelled` INTEGER | первичный `id`, внешние `pet_id` на `pets.id` и `room_id` на `rooms.id` |
+| список мест | `Room.objects.order_by("price_per_night", "name")` | сортировка по двум полям |
+| список мест | `.filter(size=size)` | фильтр по одному условию |
+| свободные места | `Booking.objects.filter(is_cancelled=False, check_in__lt=..., check_out__gt=...)` | несколько условий |
+| свободные места | `Room.objects.exclude(id__in=busy.values("room_id"))` | `exclude()` и подзапрос |
+| карточка места | `get_object_or_404(Room, pk=room_id)` | один объект, 404 |
+| карточка места | `room.bookings.filter(is_cancelled=False).select_related("pet")` | обратная связь, оптимизация |
+| карточка места | `overlapping_bookings(today, tomorrow).filter(room=room).exists()` | проверка наличия |
+| список питомцев | `Pet.objects.annotate(owner_name=F("owner__name"))` | `annotate()` и `F()` |
+| список питомцев | `.filter(species__in=..., age_months__gte=..., is_vaccinated=True)` | несколько условий, `in` |
+| список питомцев | `.filter(text_search(q, "name", "owner__name"))` | поиск по двум полям, `Q` и `icontains` |
+| карточка питомца | `Room.objects.filter(size=pet.required_room_size())` | фильтр по правилу модели |
+| карточка питомца | `pet.bookings.select_related("room").order_by("check_in")` | обратная связь |
+| главная | `Booking.objects.filter(is_cancelled=False).count()` | подсчёт |
+| главная | `.values("id", "check_in", pet_name=F("pet__name"), ...)[:3]` | `values()`, ограничение выборки |
+| бронирования | `Booking.objects.select_related("pet__owner", "room")` | две связи за один запрос |
+| бронирования | `.filter(room__size=size)`, `.filter(room_id=...)` | поле связанной модели и внешний ключ |
+| бронирования | `.filter(check_in__gte=date_from)`, `.filter(check_in__lte=date_to)` | диапазон дат |
+| бронирования | `.order_by(*SORT_FIELDS[sort])` | сортировка из словаря допустимых полей |
+| бронирования | `Paginator(bookings, 5).get_page(page)` | постраничный вывод |
+| статистика | `Room.objects.annotate(bookings_count=Count(..., filter=Q(...)), stay=Sum(...))` | условная агрегация по группам |
+| статистика | `Booking.objects.filter(...).aggregate(Count, Sum, Avg, Min, Max)` | сводные показатели |
+| статистика | `Pet.objects.values("species").annotate(Count("id"), Avg("weight_kg"))` | группировка |
+| статистика | `User.objects.annotate(pets_count=Count("pets")).filter(pets_count__gt=1)` | условие на агрегат, аналог HAVING |
+| статистика | `Room.objects.annotate(...).filter(bookings_count__gte=threshold)` | популярные места по порогу |
 
-```
-users 1 ──→ * pets 1 ──→ * bookings * ←── 1 rooms
-```
+Создание, изменение и удаление: `bulk_create()` и `all().delete()` в
+скрипте переноса, `Booking.cancel()` с `save(update_fields=...)`,
+`QuerySet.update()` и `delete()` в тестах.
 
-Логические значения хранятся числами 0 и 1, даты строками `ГГГГ-ММ-ДД`.
-Схема дополнительно проверяет данные через `NOT NULL` и `CHECK`: размер
-места из трёх вариантов, положительный тариф и вес, выезд позже заезда.
+Поиск: в SQLite `icontains` не учитывает регистр только для латиницы,
+поэтому помощник `db/search.py` объединяет через `Q(...) | Q(...)`
+варианты запроса в разных регистрах. Запросы «барсик» и «БАРСИК»
+находят «Барсик».
 
-### Файлы
-
-1. `sql/schema.sql`: команды `CREATE TABLE IF NOT EXISTS`, повторный запуск
-   не ломает базу;
-2. `sql/queries.sql`: 15 именованных запросов, каждый с комментарием
-   `-- name:` и описанием;
-3. `db/database.py`: подключение с `PRAGMA foreign_keys = ON` и
-   `row_factory = sqlite3.Row`, чтение запросов из `queries.sql` по имени,
-   функции `fetch_all` и `fetch_one`;
-4. `db/import_json.py`: перенос данных из JSON методом `executemany` в
-   порядке пользователи, места, питомцы, бронирования, с `commit` и
-   `rollback` при ошибке
-
-Python-код не содержит текста SQL-запросов: view-функции вызывают запрос
-по имени, например `fetch_all("available_rooms", params)`. Значения всегда
-передаются параметрами `?`, f-строки для подстановки не используются.
-
-### Запросы
-
-| Запрос | Вид | Где используется |
-|---|---|---|
-| `room_list` | список | `/rooms/` |
-| `pet_list` | список, JOIN | `/pets/` |
-| `rooms_by_size` | WHERE с параметром | `/rooms/?size=` |
-| `acceptable_pets` | WHERE, IN, JOIN | `/pets/?accepted=1` |
-| `booking_list` | JOIN четырёх таблиц | `/bookings/` |
-| `active_booking_list` | JOIN, WHERE | `/bookings/?active=1` |
-| `available_rooms` | подзапрос NOT IN, параметры | `/rooms/available/` |
-| `active_bookings_count` | COUNT | главная |
-| `income_summary` | COUNT, SUM, AVG, MIN, MAX | статистика |
-| `bookings_per_room` | LEFT JOIN, GROUP BY | статистика |
-| `pets_by_species` | GROUP BY, AVG | статистика |
-| `income_by_size` | LEFT JOIN, GROUP BY, SUM | статистика |
-| `popular_rooms` | GROUP BY, HAVING с параметром | статистика |
-| `owners_with_several_pets` | GROUP BY, HAVING | статистика |
-| `upcoming_check_ins` | ORDER BY, LIMIT | главная |
-
-### Создание базы
-
-```bash
-python -m db.import_json
-```
-
-Команда создаёт таблицы, если их нет, очищает их и заново переносит данные
-из JSON. Консольная версия по-прежнему пишет в JSON, поэтому после её
-изменений базу нужно обновить этой же командой.
+Проверка параметров: неизвестные статус, размер, место и поле
+сортировки заменяются значениями по умолчанию, неверная дата или
+перевёрнутый период выводятся сообщением и не применяются, неверный
+номер страницы даёт первую или последнюю страницу. В `order_by()`
+попадают только поля из словаря `SORT_FIELDS`.
 
 ## Как запрос становится страницей
 ```
@@ -258,7 +293,9 @@ config/urls.py: path("rooms/", include("rooms.urls"))
 rooms/urls.py: path("<int:room_id>/", views.room_detail)
    ↓
 rooms/views.py: room_detail(request, room_id=1)
-   ↓   load_all(), find_room_by_id(), is_room_available()
+   ↓   get_object_or_404(Room, pk=1), room.bookings.filter(...)
+ORM: SQL-запрос к db.sqlite3, строки превращаются в объекты моделей
+   ↓
 context: room, is_free, bookings
    ↓
 render(): rooms/room_detail.html, наследует base.html
@@ -464,8 +501,10 @@ pet-boarding/
 │   └── wsgi.py
 ├── templates/                  шаблоны уровня проекта
 │   ├── base.html               общий каркас страниц
+│   ├── 404.html                страница «не найдено»
 │   └── includes/
-│       └── navigation.html     шапка и навигация
+│       ├── navigation.html     шапка и навигация
+│       └── pagination.html     ссылки на страницы списка
 ├── homepage/                   главная страница
 │   ├── static/homepage/
 │   │   ├── css/style.css
@@ -475,24 +514,36 @@ pet-boarding/
 │   │   └── index.html
 │   ├── urls.py
 │   └── views.py
-├── rooms/                      страницы мест
+├── users/                      модель пользователя
+│   ├── migrations/
+│   └── models.py               User
+├── rooms/                      модель и страницы мест
+│   ├── migrations/             миграции таблицы мест
+│   ├── models.py               Room
 │   ├── templates/rooms/
 │   │   ├── room_list.html
+│   │   ├── available.html
 │   │   ├── room_detail.html
 │   │   └── includes/room_card.html
 │   ├── urls.py
 │   └── views.py
-├── pets/                       страницы питомцев
+├── pets/                       модель и страницы питомцев
+│   ├── migrations/
+│   ├── models.py               Pet
 │   ├── templates/pets/
 │   │   ├── pet_list.html
 │   │   ├── pet_detail.html
 │   │   └── includes/acceptance_badge.html
 │   ├── urls.py
 │   └── views.py
-├── bookings/                   страницы бронирований
+├── bookings/                   модель, страницы и статистика броней
+│   ├── migrations/
+│   ├── fixtures/demo_bookings.json   демонстрационные брони
+│   ├── models.py               Booking
 │   ├── templates/bookings/
 │   │   ├── booking_list.html
 │   │   ├── booking_detail.html
+│   │   ├── statistics.html
 │   │   └── includes/
 │   │       ├── booking_status.html
 │   │       └── booking_period.html
@@ -512,15 +563,17 @@ pet-boarding/
 │   ├── exceptions.py           исключения предметной области
 │   ├── storage.py              преобразование JSON в объекты и обратно
 │   └── utils.py                ввод данных с проверкой
-├── db/                         работа с SQLite из Python
+├── db/                         базы данных и перенос
 │   ├── __init__.py
-│   ├── database.py             подключение и выполнение запросов
-│   └── import_json.py          перенос данных из JSON в базу
+│   ├── database.py             подключение к базе ПР7
+│   ├── import_json.py          JSON в базу ПР7
+│   ├── inspect_source_db.py    структура и проверка базы ПР7
+│   ├── import_sqlite_to_orm.py база ПР7 в модели Django
+│   └── search.py               поиск без учёта регистра
 ├── sql/
-│   ├── schema.sql              создание таблиц
-│   └── queries.sql             именованные запросы проекта
+│   └── schema.sql              таблицы базы ПР7
 ├── data/                       файлы данных
-│   ├── pet_boarding.sqlite     база данных SQLite
+│   ├── pet_boarding.sqlite     исходная база ПР7
 │   ├── users.json
 │   ├── pets.json
 │   ├── rooms.json
@@ -531,13 +584,14 @@ pet-boarding/
     ├── test_pets.py
     ├── test_rooms.py
     ├── test_bookings.py
-    └── test_database.py        схема, импорт и запросы SQLite
+    ├── test_database.py        схема и импорт базы ПР7
+    └── test_orm.py             модели, связи, ORM-запросы, страницы
 ```
 
 ## Требования
 1. Python 3.10 или новее;
 2. Django 5.2;
-3. pytest;
+3. pytest и pytest-django;
 4. flake8
 
 ## Установка
@@ -546,7 +600,8 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 python manage.py migrate
-python -m db.import_json
+python -m db.import_sqlite_to_orm
+python manage.py loaddata demo_bookings
 ```
 
 ## Запуск программы
@@ -579,9 +634,15 @@ pytest -v
 6. исключения при оформлении бронирования;
 7. отбор бронирований места и питомца;
 8. статистику;
-9. базу данных: таблицы и внешние ключи, импорт из JSON, выполнение всех
-   запросов из `queries.sql`, поиск свободных мест, HAVING и то, что
-   значение параметра не выполняется как SQL
+9. базу ПР7: таблицы, внешние ключи, импорт из JSON;
+10. модели Django: связи в обе стороны, `PROTECT`, ограничение периода,
+    отмену и изменение записей, поиск по кириллице;
+11. страницы: фильтры, поиск, сортировку по допустимым полям,
+    пагинацию с сохранением параметров, ответ 404, сообщения об
+    ошибках ввода, статистику только по активным броням
+
+Тесты ORM работают с отдельной временной базой, которую pytest-django
+создаёт и удаляет сам.
 
 ## Проверка качества кода
 ```bash
@@ -591,11 +652,11 @@ flake8
 ## План развития
 На следующих этапах я планирую:
 
-1. перенос таблиц в модели Django ORM;
+1. административную панель Django и оптимизацию запросов;
 2. формы для добавления питомцев, оформления и отмены бронирований;
 3. регистрацию и вход пользователей, разные права клиента и администратора;
 4. разработку API;
 5. контейнеризацию приложения
 
-Сейчас база подключается напрямую через `sqlite3`, Django ORM и формы ещё
-не используются: это задачи следующих практических работ.
+Сейчас данные можно только просматривать и искать в веб-интерфейсе:
+добавление и изменение через формы появятся в следующих работах.
