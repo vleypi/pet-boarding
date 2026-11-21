@@ -18,7 +18,10 @@
 7. SQLite и Django ORM: реляционная база данных, модели и миграции;
 8. JSON: исходные данные и хранилище консольной версии;
 9. pytest и pytest-django: автоматизированные тесты;
-10. flake8: проверка качества кода
+10. flake8: проверка качества кода;
+11. Django Admin: административная панель;
+12. Django Debug Toolbar: анализ SQL-запросов при разработке;
+13. Unidecode: транслитерация названий мест для адресов страниц
 
 ## Целевая аудитория
 1. Владельцы кошек и собак, которым нужно оставить питомца на время отъезда
@@ -86,7 +89,8 @@
 | `/` | `homepage.views.index` | описание гостиницы, условия приёма, разделы |
 | `/rooms/` | `rooms.views.room_list` | места по возрастанию тарифа, фильтр `?size=` |
 | `/rooms/available/` | `rooms.views.available_rooms` | поиск мест, свободных на период |
-| `/rooms/<int:room_id>/` | `rooms.views.room_detail` | размер, тариф, занятость сегодня, активные брони |
+| `/rooms/<slug:slug>/` | `rooms.views.room_detail` | размер, тариф, занятость сегодня, активные брони, адрес вида `/rooms/voler-1-1/` |
+| `/admin/` | `django.contrib.admin` | административная панель |
 | `/pets/` | `pets.views.pet_list` | питомцы по весу с владельцами, фильтр `?accepted=1`, поиск `?q=` |
 | `/pets/<int:pet_id>/` | `pets.views.pet_detail` | владелец, допуск, подходящие места, история бронирований |
 | `/bookings/` | `bookings.views.booking_list` | бронирования, параметры `q`, `status`, `size`, `room`, `date_from`, `date_to`, `sort`, `page` |
@@ -195,9 +199,9 @@ ORM. База ПР7 `data/pet_boarding.sqlite` осталась источник
 | Модель | Приложение | Поля | Связи |
 |---|---|---|---|
 | `User` | `users` | `name`, `phone`, `role` (клиент или администратор) | обратная `pets` |
-| `Room` | `rooms` | `name`, `size` (малое, среднее, большое), `price_per_night` | обратная `bookings` |
-| `Pet` | `pets` | `name`, `species`, `age_months`, `weight_kg`, `is_vaccinated` | `owner` на `User`, обратная `bookings` |
-| `Booking` | `bookings` | `check_in`, `check_out` (`DateField`), `is_cancelled` | `pet` на `Pet`, `room` на `Room` |
+| `Room` | `rooms` | `name`, `slug`, `size` (малое, среднее, большое), `price_per_night` | обратная `bookings` |
+| `Pet` | `pets` | `name`, `species`, `age_months`, `weight_kg`, `is_vaccinated`, `room_size` (`GeneratedField`) | `owner` на `User`, обратная `bookings` |
+| `Booking` | `bookings` | `check_in`, `check_out` (`DateField`), `status` (`TextChoices`) | `pet` на `Pet`, `room` на `Room` |
 
 ```
 User 1 ──→ * Pet 1 ──→ * Booking * ←── 1 Room
@@ -217,18 +221,76 @@ User 1 ──→ * Pet 1 ──→ * Booking * ←── 1 Room
 
 Методы моделей: `Room.is_suitable_for()` и `Room.cost_for()`,
 `Pet.rejection_reason()`, `Pet.can_be_accepted()` и
-`Pet.required_room_size()`, свойства `Booking.status`, `Booking.nights`,
-`Booking.cost`, метод `Booking.cancel()` с
-`save(update_fields=["is_cancelled"])`.
+`Pet.required_room_size()`, свойства `Booking.is_active`,
+`Booking.nights`, `Booking.cost`, методы `Booking.cancel()` и
+`Booking.complete()` с `save(update_fields=["status"])`. У всех моделей
+есть `get_absolute_url()`, шаблоны и админка берут адреса страниц из него.
+
+### Статусы бронирования
+
+С ПР10 вместо признака `is_cancelled` у брони поле `status` с
+перечислением `Booking.Status(TextChoices)`:
+
+| Значение | Подпись | Занимает место | Входит в выручку |
+|---|---|---|---|
+| `active` | Активно | да | да |
+| `cancelled` | Отменено | нет | нет |
+| `completed` | Завершено | нет | да |
+
+Переход выполнен тремя миграциями: `0003_booking_status` добавляет поле,
+`0004_migrate_booking_statuses` (`RunPython`) переносит отмены в
+`cancelled`, а остальные брони в `active`, `0005_remove_is_cancelled`
+удаляет старое поле. Завершённым статус автоматически по дате не
+становится: его ставит администратор действием в админке.
+
+Менеджер `Booking.objects` построен на `BookingQuerySet`:
+
+| Метод | Что возвращает |
+|---|---|
+| `active()`, `cancelled()`, `completed()` | брони с нужным статусом |
+| `billable()` | все, кроме отменённых: для выручки и загрузки мест |
+| `overlapping(check_in, check_out)` | активные брони, пересекающиеся с периодом |
+| `with_related()` | `select_related("pet__owner", "room")` |
+
+Методы работают и через обратные связи: `room.bookings.active()`.
+
+`Booking.clean()` проверяет правила предметной области: выезд позже
+заезда, допуск питомца, размер места и то, что место не занято другой
+активной бронью. Эти проверки срабатывают в формах, в том числе в
+админке. Массовые действия админки работают через `update()` и `clean()`
+не вызывают, поэтому действие «Вернуть в активные» отдельно проверяет
+занятость места и пропускает конфликтующие брони.
+
+### Адрес места и вычисляемое поле
+
+`Room.slug` строится из названия: `unidecode()` переводит кириллицу в
+латиницу, `slugify()` готовит строку для адреса, в конце добавляется
+`id` для уникальности, например «Вольер 1» превращается в `voler-1-1`.
+Поле заполняется в `save()` один раз и при переименовании не меняется,
+поэтому ссылки не ломаются. Существующие места получили slug миграцией
+`0004_populate_room_slugs`, после чего `0005_room_slug_unique` сделала
+поле уникальным.
+
+`Pet.room_size` объявлено через `GeneratedField`: размер места по весу
+вычисляет сама база выражением `CASE WHEN weight_kg < 5 ...`, столбец
+хранится (`db_persist=True`) и пересчитывается при изменении веса. После
+`save()` новое значение видно после `refresh_from_db()`.
+
+### Контекстный процессор
+
+`homepage.context_processors.site_info` добавляет во все шаблоны
+название гостиницы `site_name`, число мест `rooms_count` и число
+активных броней `active_bookings_count`. Они выводятся в шапке,
+заголовке вкладки и подвале, главная берёт счётчик отсюда же.
 
 ### Миграции и перенос данных
 
 | Команда | Что делает |
 |---|---|
-| `python manage.py migrate` | создаёт таблицы по миграциям `*/migrations/0001_initial.py` |
+| `python manage.py migrate` | создаёт таблицы и применяет все миграции, в том числе миграции данных |
 | `python -m db.inspect_source_db` | выводит структуру базы ПР7 и проверяет связи и форматы, ничего не меняя |
 | `python -m db.import_sqlite_to_orm` | переносит пользователей, места, питомцев и брони через ORM с прежними `id` в одной транзакции |
-| `python manage.py loaddata demo_bookings` | добавляет 10 демонстрационных броней из фикстуры для пагинации и ближайших заездов |
+| `python manage.py loaddata demo_bookings` | добавляет 12 демонстрационных броней разных статусов из фикстуры |
 
 Перенос сначала очищает таблицы ORM, поэтому повторный запуск не создаёт
 дублей. Даты из строк `ГГГГ-ММ-ДД` превращаются в `date`, числа 0 и 1 в
@@ -246,25 +308,27 @@ User 1 ──→ * Pet 1 ──→ * Booking * ←── 1 Room
 |---|---|---|
 | список мест | `Room.objects.order_by("price_per_night", "name")` | сортировка по двум полям |
 | список мест | `.filter(size=size)` | фильтр по одному условию |
-| свободные места | `Booking.objects.filter(is_cancelled=False, check_in__lt=..., check_out__gt=...)` | несколько условий |
+| свободные места | `Booking.objects.overlapping(check_in, check_out)` | метод менеджера, несколько условий |
 | свободные места | `Room.objects.exclude(id__in=busy.values("room_id"))` | `exclude()` и подзапрос |
-| карточка места | `get_object_or_404(Room, pk=room_id)` | один объект, 404 |
-| карточка места | `room.bookings.filter(is_cancelled=False).select_related("pet")` | обратная связь, оптимизация |
-| карточка места | `overlapping_bookings(today, tomorrow).filter(room=room).exists()` | проверка наличия |
+| карточка места | `get_object_or_404(Room, slug=slug)` | один объект по slug, 404 |
+| карточка места | `room.bookings.active().select_related("pet")` | обратная связь, метод менеджера |
+| карточка места | `Booking.objects.overlapping(today, tomorrow).filter(room=room).exists()` | проверка наличия |
 | список питомцев | `Pet.objects.annotate(owner_name=F("owner__name"))` | `annotate()` и `F()` |
 | список питомцев | `.filter(species__in=..., age_months__gte=..., is_vaccinated=True)` | несколько условий, `in` |
 | список питомцев | `.filter(text_search(q, "name", "owner__name"))` | поиск по двум полям, `Q` и `icontains` |
-| карточка питомца | `Room.objects.filter(size=pet.required_room_size())` | фильтр по правилу модели |
+| карточка питомца | `Room.objects.filter(size=pet.room_size)` | фильтр по вычисляемому полю |
 | карточка питомца | `pet.bookings.select_related("room").order_by("check_in")` | обратная связь |
-| главная | `Booking.objects.filter(is_cancelled=False).count()` | подсчёт |
+| все страницы | `Room.objects.count()`, `Booking.objects.active().count()` | подсчёт в контекстном процессоре |
 | главная | `.values("id", "check_in", pet_name=F("pet__name"), ...)[:3]` | `values()`, ограничение выборки |
-| бронирования | `Booking.objects.select_related("pet__owner", "room")` | две связи за один запрос |
+| бронирования | `Booking.objects.with_related()` | две связи за один запрос |
+| бронирования | `.filter(status=status)` | статус из `Booking.Status.values` |
 | бронирования | `.filter(room__size=size)`, `.filter(room_id=...)` | поле связанной модели и внешний ключ |
 | бронирования | `.filter(check_in__gte=date_from)`, `.filter(check_in__lte=date_to)` | диапазон дат |
 | бронирования | `.order_by(*SORT_FIELDS[sort])` | сортировка из словаря допустимых полей |
 | бронирования | `Paginator(bookings, 5).get_page(page)` | постраничный вывод |
 | статистика | `Room.objects.annotate(bookings_count=Count(..., filter=Q(...)), stay=Sum(...))` | условная агрегация по группам |
-| статистика | `Booking.objects.filter(...).aggregate(Count, Sum, Avg, Min, Max)` | сводные показатели |
+| статистика | `Booking.objects.billable().aggregate(Sum, Avg, Min, Max)` | сводные показатели |
+| статистика | `Booking.objects.aggregate(active_count=Count("id", filter=Q(status=...)), ...)` | число броней каждого статуса |
 | статистика | `Pet.objects.values("species").annotate(Count("id"), Avg("weight_kg"))` | группировка |
 | статистика | `User.objects.annotate(pets_count=Count("pets")).filter(pets_count__gt=1)` | условие на агрегат, аналог HAVING |
 | статистика | `Room.objects.annotate(...).filter(bookings_count__gte=threshold)` | популярные места по порогу |
@@ -284,19 +348,60 @@ User 1 ──→ * Pet 1 ──→ * Booking * ←── 1 Room
 номер страницы даёт первую или последнюю страницу. В `order_by()`
 попадают только поля из словаря `SORT_FIELDS`.
 
+## Административная панель
+
+Адрес `/admin/`. Для входа нужна учётная запись Django:
+
+```bash
+python manage.py createsuperuser
+```
+
+Модель `users.User` описывает владельцев и администраторов гостиницы и
+входа в админку не даёт: вход выполняется встроенной моделью
+`django.contrib.auth`.
+
+| Модель | Настройки `ModelAdmin` |
+|---|---|
+| `Room` | столбцы с числом активных броней через `annotate`, ссылка «открыть» на страницу сайта, `list_editable` для тарифа, фильтр по размеру, поиск по названию, `slug` только для чтения, inline броней |
+| `User` | столбец с числом питомцев, фильтр по роли, поиск по имени и телефону, inline питомцев |
+| `Pet` | столбцы допуска и `room_size`, фильтры по виду, размеру места и прививкам, поиск по кличке и владельцу, `autocomplete_fields` для владельца, inline истории броней |
+| `Booking` | владелец, сутки и стоимость в списке, фильтры по статусу, размеру места и месту, `date_hierarchy` по дате заезда, поиск по кличке, владельцу и месту, `autocomplete_fields`, действия «Отменить», «Завершить», «Вернуть в активные» |
+
+Общее для всех: `list_display_links`, `ordering`, `list_per_page = 20`,
+`list_select_related` и `select_related` в inline против лишних запросов.
+Приложения подписаны по-русски через `verbose_name` в `apps.py`, поля
+имеют `verbose_name` и `help_text`, заголовки панели заданы в
+`bookings/admin.py`. Поиск во всех списках идёт через
+`CyrillicSearchMixin` из `db/search.py`, поэтому кириллица ищется без
+учёта регистра.
+
+## Анализ запросов
+
+При `DEBUG = True` подключается Django Debug Toolbar (панель справа на
+каждой странице, адрес `__debug__/`). Во время тестов панель
+отключается: настройка `TESTING` в `settings.py`. Результаты анализа:
+
+| Страница | SQL-запросов | Что видно |
+|---|---|---|
+| `/bookings/` | 5 | одна выборка с `INNER JOIN` броней, мест, питомцев и пользователей и `LIMIT 5`, `COUNT` для пагинатора, список мест для фильтра, два счётчика контекстного процессора |
+| `/bookings/statistics/` | 8 | агрегаты по местам, статусам, видам и владельцам |
+| `/rooms/<slug>/` | 5 | место, проверка занятости `EXISTS`, активные брони с питомцем |
+| `/admin/rooms/room/1/change/` | 26 до оптимизации, 14 после | строки inline загружали питомца и место по одному, `select_related` в `get_queryset` inline убрал повторы |
+
 ## Как запрос становится страницей
 ```
-Браузер: GET /rooms/1/
+Браузер: GET /rooms/voler-1-1/
    ↓
 config/urls.py: path("rooms/", include("rooms.urls"))
    ↓
-rooms/urls.py: path("<int:room_id>/", views.room_detail)
+rooms/urls.py: path("<slug:slug>/", views.room_detail)
    ↓
-rooms/views.py: room_detail(request, room_id=1)
-   ↓   get_object_or_404(Room, pk=1), room.bookings.filter(...)
+rooms/views.py: room_detail(request, slug="voler-1-1")
+   ↓   get_object_or_404(Room, slug=...), room.bookings.active()
 ORM: SQL-запрос к db.sqlite3, строки превращаются в объекты моделей
    ↓
 context: room, is_free, bookings
+   ↓   + site_name, rooms_count, active_bookings_count из контекстного процессора
    ↓
 render(): rooms/room_detail.html, наследует base.html
    ↓
@@ -512,14 +617,17 @@ pet-boarding/
 │   │   └── img/logo.svg
 │   ├── templates/homepage/
 │   │   └── index.html
+│   ├── context_processors.py   общие данные для всех шаблонов
 │   ├── urls.py
 │   └── views.py
 ├── users/                      модель пользователя
 │   ├── migrations/
+│   ├── admin.py                UserAdmin и inline питомцев
 │   └── models.py               User
 ├── rooms/                      модель и страницы мест
 │   ├── migrations/             миграции таблицы мест
-│   ├── models.py               Room
+│   ├── admin.py                RoomAdmin и inline броней
+│   ├── models.py               Room, room_slug
 │   ├── templates/rooms/
 │   │   ├── room_list.html
 │   │   ├── available.html
@@ -529,6 +637,7 @@ pet-boarding/
 │   └── views.py
 ├── pets/                       модель и страницы питомцев
 │   ├── migrations/
+│   ├── admin.py                PetAdmin и inline броней
 │   ├── models.py               Pet
 │   ├── templates/pets/
 │   │   ├── pet_list.html
@@ -539,7 +648,8 @@ pet-boarding/
 ├── bookings/                   модель, страницы и статистика броней
 │   ├── migrations/
 │   ├── fixtures/demo_bookings.json   демонстрационные брони
-│   ├── models.py               Booking
+│   ├── admin.py                BookingAdmin, действия со статусами
+│   ├── models.py               Booking, BookingQuerySet, BookingManager
 │   ├── templates/bookings/
 │   │   ├── booking_list.html
 │   │   ├── booking_detail.html
@@ -569,7 +679,7 @@ pet-boarding/
 │   ├── import_json.py          JSON в базу ПР7
 │   ├── inspect_source_db.py    структура и проверка базы ПР7
 │   ├── import_sqlite_to_orm.py база ПР7 в модели Django
-│   └── search.py               поиск без учёта регистра
+│   └── search.py               поиск без учёта регистра, миксин для админки
 ├── sql/
 │   └── schema.sql              таблицы базы ПР7
 ├── data/                       файлы данных
@@ -592,7 +702,9 @@ pet-boarding/
 1. Python 3.10 или новее;
 2. Django 5.2;
 3. pytest и pytest-django;
-4. flake8
+4. flake8;
+5. Unidecode;
+6. django-debug-toolbar
 
 ## Установка
 ```bash
@@ -602,6 +714,7 @@ pip install -r requirements.txt
 python manage.py migrate
 python -m db.import_sqlite_to_orm
 python manage.py loaddata demo_bookings
+python manage.py createsuperuser
 ```
 
 ## Запуск программы
@@ -639,7 +752,14 @@ pytest -v
     отмену и изменение записей, поиск по кириллице;
 11. страницы: фильтры, поиск, сортировку по допустимым полям,
     пагинацию с сохранением параметров, ответ 404, сообщения об
-    ошибках ввода, статистику только по активным броням
+    ошибках ввода, статистику без отменённых броней;
+12. статусы и `BookingQuerySet`: `active`, `cancelled`, `completed`,
+    `billable`, `overlapping`, завершённая бронь не занимает место;
+13. правила `Booking.clean()`: период, допуск, размер и занятость места;
+14. slug и `get_absolute_url`, вычисляемое поле `room_size`,
+    контекстный процессор;
+15. административную панель: страницы открываются, поиск по кириллице,
+    действие «Вернуть в активные» не возвращает бронь на занятое место
 
 Тесты ORM работают с отдельной временной базой, которую pytest-django
 создаёт и удаляет сам.
@@ -652,11 +772,11 @@ flake8
 ## План развития
 На следующих этапах я планирую:
 
-1. административную панель Django и оптимизацию запросов;
-2. формы для добавления питомцев, оформления и отмены бронирований;
-3. регистрацию и вход пользователей, разные права клиента и администратора;
-4. разработку API;
-5. контейнеризацию приложения
+1. формы для добавления питомцев, оформления и отмены бронирований;
+2. регистрацию и вход пользователей, разные права клиента и администратора;
+3. разработку API;
+4. контейнеризацию приложения
 
-Сейчас данные можно только просматривать и искать в веб-интерфейсе:
-добавление и изменение через формы появятся в следующих работах.
+Сейчас данные можно просматривать и искать на сайте, а изменять в
+административной панели. Формы для посетителей сайта появятся в
+следующей работе.
