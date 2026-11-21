@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+
+{% block title %}Страница не найдена | Передержка{% endblock %}
+
+{% block content %}
+    <h1 class="h3 text-danger">Страница не найдена</h1>
+    <p>Запрошенной записи нет или адрес указан неверно.</p>
+    <a class="btn btn-outline-secondary" href="{% url 'homepage:index' %}">На главную</a>
+{% endblock %}

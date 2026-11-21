@@ -20,7 +20,7 @@
             <ul class="mb-0">
                 {% for item in upcoming %}
                     <li>
-                        {{ item.check_in }}: {{ item.pet_name }} в месте «{{ item.room_name }}»,
+                        {{ item.check_in|date:"d.m.Y" }}: {{ item.pet_name }} в месте «{{ item.room_name }}»,
                         <a href="{% url 'bookings:detail' item.id %}">бронирование № {{ item.id }}</a>
                     </li>
                 {% empty %}

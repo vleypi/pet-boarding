@@ -7,11 +7,25 @@
         <h1 class="h2 mb-0">Питомцы</h1>
         <div class="d-flex gap-2">
             <a class="btn btn-sm {% if not only_accepted %}btn-secondary{% else %}btn-outline-secondary{% endif %}"
-               href="{% url 'pets:list' %}">все</a>
+               href="{% url 'pets:list' %}{% if query %}?q={{ query|urlencode }}{% endif %}">все</a>
             <a class="btn btn-sm {% if only_accepted %}btn-secondary{% else %}btn-outline-secondary{% endif %}"
-               href="{% url 'pets:list' %}?accepted=1">можно принять</a>
+               href="{% url 'pets:list' %}?accepted=1{% if query %}&q={{ query|urlencode }}{% endif %}">можно принять</a>
         </div>
     </div>
+
+    <form method="get" class="row g-2 my-3">
+        {% if only_accepted %}<input type="hidden" name="accepted" value="1">{% endif %}
+        <div class="col-sm-8 col-lg-5">
+            <input class="form-control" type="search" name="q" value="{{ query }}"
+                   placeholder="Кличка или имя владельца" aria-label="Поиск питомца">
+        </div>
+        <div class="col-auto">
+            <button class="btn btn-primary" type="submit">Найти</button>
+            {% if query %}
+                <a class="btn btn-outline-secondary" href="{% url 'pets:list' %}{% if only_accepted %}?accepted=1{% endif %}">Сбросить</a>
+            {% endif %}
+        </div>
+    </form>
     <p class="text-muted">Найдено питомцев: {{ pets|length }}</p>
 
     <div class="table-responsive">
@@ -33,7 +47,7 @@
                         <td>{{ pet.owner_name }}</td>
                     </tr>
                 {% empty %}
-                    <tr><td colspan="4" class="text-muted">Питомцев нет</td></tr>
+                    <tr><td colspan="4" class="text-muted">{% if query %}По запросу «{{ query }}» ничего не найдено{% else %}Питомцев нет{% endif %}</td></tr>
                 {% endfor %}
             </tbody>
         </table>

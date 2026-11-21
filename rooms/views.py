@@ -1,29 +1,33 @@
 from datetime import date, timedelta
 
 from django.http import HttpRequest, HttpResponse
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
 
-from db.database import fetch_all
+from bookings.models import Booking
+from rooms.models import Room
 from src.constants import ROOM_SIZES
 from src.exceptions import BookingError
-from src.models.bookings import (
-    active_bookings_for_room,
-    is_room_available,
-    validate_period,
-)
-from src.models.rooms import find_room_by_id
-from src.storage import load_all
+from src.models.bookings import validate_period
+
+
+def overlapping_bookings(check_in: date, check_out: date):
+    """Активные бронирования, которые пересекаются с периодом"""
+    return Booking.objects.filter(
+        is_cancelled=False,
+        check_in__lt=check_out,
+        check_out__gt=check_in,
+    )
 
 
 def room_list(request: HttpRequest) -> HttpResponse:
-    """Список мест из SQLite, при выборе размера только места этого размера"""
+    """Список мест по тарифу, при выборе размера только места этого размера"""
     size = request.GET.get("size", "")
+    rooms = Room.objects.order_by("price_per_night", "name")
     if size in ROOM_SIZES:
-        rooms = fetch_all("rooms_by_size", (size,))
+        rooms = rooms.filter(size=size)
     else:
         size = ""
-        rooms = fetch_all("room_list")
     context = {"rooms": rooms, "sizes": ROOM_SIZES, "size": size}
     return render(request, "rooms/room_list.html", context)
 
@@ -33,6 +37,8 @@ def available_rooms(request: HttpRequest) -> HttpResponse:
     check_in_text = request.GET.get("check_in", "")
     check_out_text = request.GET.get("check_out", "")
     size = request.GET.get("size", "")
+    if size not in ROOM_SIZES:
+        size = ""
     context = {
         "check_in": check_in_text,
         "check_out": check_out_text,
@@ -51,28 +57,30 @@ def available_rooms(request: HttpRequest) -> HttpResponse:
         except BookingError as error:
             context["error"] = str(error)
         else:
-            context["rooms"] = fetch_all(
-                "available_rooms",
-                (check_out.isoformat(), check_in.isoformat(), size, size),
-            )
+            busy = overlapping_bookings(check_in, check_out)
+            rooms = Room.objects.exclude(
+                id__in=busy.values("room_id")
+            ).order_by("price_per_night", "name")
+            if size:
+                rooms = rooms.filter(size=size)
+            context["rooms"] = rooms
     return render(request, "rooms/available.html", context)
 
 
 def room_detail(request: HttpRequest, room_id: int) -> HttpResponse:
     """Карточка места: тариф, занятость сегодня и активные бронирования"""
-    _, rooms, _, bookings = load_all()
-    room = find_room_by_id(rooms, room_id)
-    context = {"room": room}
-    if room is not None:
-        today = timezone.localdate()
-        tomorrow = today + timedelta(days=1)
-        context["is_free"] = is_room_available(
-            bookings, room, today, tomorrow
-        )
-        context["bookings"] = active_bookings_for_room(bookings, room)
-    return render(
-        request,
-        "rooms/room_detail.html",
-        context,
-        status=404 if room is None else 200,
+    room = get_object_or_404(Room, pk=room_id)
+    today = timezone.localdate()
+    tomorrow = today + timedelta(days=1)
+    busy_today = overlapping_bookings(today, tomorrow).filter(room=room)
+    bookings = (
+        room.bookings.filter(is_cancelled=False)
+        .select_related("pet")
+        .order_by("check_in")
     )
+    context = {
+        "room": room,
+        "is_free": not busy_today.exists(),
+        "bookings": bookings,
+    }
+    return render(request, "rooms/room_detail.html", context)
