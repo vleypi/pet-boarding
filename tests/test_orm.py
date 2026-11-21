@@ -224,7 +224,9 @@ def test_home_shows_upcoming(client, hotel):
     response = client.get("/")
     upcoming = list(response.context["upcoming"])
     assert [item["pet_name"] for item in upcoming] == ["Барсик"]
-    assert response.context["active_count"] == 3
+    assert response.context["active_bookings_count"] == 3
+    assert response.context["rooms_count"] == 3
+    assert response.context["site_name"] == "Передержка"
 
 
 def test_queryset_methods(hotel):

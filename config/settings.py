@@ -1,3 +1,5 @@
+import os
+import sys
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -34,6 +36,16 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+TESTING = "test" in sys.argv or "PYTEST_VERSION" in os.environ
+
+DEBUG_TOOLBAR_ENABLED = DEBUG and not TESTING
+
+if DEBUG_TOOLBAR_ENABLED:
+    INSTALLED_APPS.append("debug_toolbar")
+    MIDDLEWARE.insert(1, "debug_toolbar.middleware.DebugToolbarMiddleware")
+
+INTERNAL_IPS = ["127.0.0.1"]
+
 ROOT_URLCONF = "config.urls"
 
 TEMPLATES = [
@@ -46,6 +58,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "homepage.context_processors.site_info",
             ],
         },
     },

@@ -16,6 +16,10 @@ class BookingInline(admin.TabularInline):
     extra = 0
     show_change_link = True
 
+    def get_queryset(self, request):
+        """Загрузить питомца и место броней одним запросом"""
+        return super().get_queryset(request).select_related("pet", "room")
+
 
 @admin.register(Room)
 class RoomAdmin(CyrillicSearchMixin, admin.ModelAdmin):

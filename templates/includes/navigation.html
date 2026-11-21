@@ -3,12 +3,12 @@
     <nav class="container d-flex flex-wrap align-items-center gap-3 py-3">
         <a class="brand fw-bold text-decoration-none me-auto d-flex align-items-center gap-2"
            href="{% url 'homepage:index' %}">
-            <img class="site-logo" src="{% static 'homepage/img/logo.svg' %}" alt="Передержка">
-            Передержка
+            <img class="site-logo" src="{% static 'homepage/img/logo.svg' %}" alt="{{ site_name }}">
+            {{ site_name }}
         </a>
-        <a class="link-secondary" href="{% url 'rooms:list' %}">Места</a>
+        <a class="link-secondary" href="{% url 'rooms:list' %}">Места <span class="badge text-bg-light">{{ rooms_count }}</span></a>
         <a class="link-secondary" href="{% url 'pets:list' %}">Питомцы</a>
-        <a class="link-secondary" href="{% url 'bookings:list' %}">Бронирования</a>
+        <a class="link-secondary" href="{% url 'bookings:list' %}">Бронирования <span class="badge text-bg-success" title="активные">{{ active_bookings_count }}</span></a>
         <a class="link-secondary" href="{% url 'bookings:statistics' %}">Статистика</a>
     </nav>
 </header>
