@@ -1,0 +1,25 @@
+{% if page_obj.paginator.num_pages > 1 %}
+    <nav aria-label="Страницы">
+        <ul class="pagination">
+            {% if page_obj.has_previous %}
+                <li class="page-item"><a class="page-link" href="{% querystring page=1 %}">« первая</a></li>
+                <li class="page-item"><a class="page-link" href="{% querystring page=page_obj.previous_page_number %}">‹ назад</a></li>
+            {% else %}
+                <li class="page-item disabled"><span class="page-link">« первая</span></li>
+                <li class="page-item disabled"><span class="page-link">‹ назад</span></li>
+            {% endif %}
+
+            <li class="page-item active" aria-current="page">
+                <span class="page-link">{{ page_obj.number }} из {{ page_obj.paginator.num_pages }}</span>
+            </li>
+
+            {% if page_obj.has_next %}
+                <li class="page-item"><a class="page-link" href="{% querystring page=page_obj.next_page_number %}">вперёд ›</a></li>
+                <li class="page-item"><a class="page-link" href="{% querystring page=page_obj.paginator.num_pages %}">последняя »</a></li>
+            {% else %}
+                <li class="page-item disabled"><span class="page-link">вперёд ›</span></li>
+                <li class="page-item disabled"><span class="page-link">последняя »</span></li>
+            {% endif %}
+        </ul>
+    </nav>
+{% endif %}

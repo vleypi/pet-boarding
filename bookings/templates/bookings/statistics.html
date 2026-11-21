@@ -7,7 +7,7 @@
 
     <div class="row g-3 mb-4">
         <div class="col-6 col-lg-3"><div class="card stat-card"><div class="card-body">
-            <div class="stat-value">{{ summary.bookings_count }}</div><div class="text-muted">активных бронирований</div>
+            <div class="stat-value">{{ summary.bookings_count }}</div><div class="text-muted">активных бронирований, отменено {{ summary.cancelled_count }}</div>
         </div></div></div>
         <div class="col-6 col-lg-3"><div class="card stat-card"><div class="card-body">
             <div class="stat-value">{{ summary.nights }}</div><div class="text-muted">суток забронировано</div>
@@ -19,6 +19,10 @@
             <div class="stat-value">{{ summary.income }} ₽</div><div class="text-muted">выручка</div>
         </div></div></div>
     </div>
+
+    {% if summary.first_check_in %}
+        <p class="text-muted">Период активных бронирований: с {{ summary.first_check_in|date:"d.m.Y" }} по {{ summary.last_check_out|date:"d.m.Y" }}</p>
+    {% endif %}
 
     <div class="row g-4">
         <div class="col-lg-6">

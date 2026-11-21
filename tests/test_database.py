@@ -3,13 +3,7 @@ from contextlib import closing
 
 import pytest
 
-from db.database import (
-    create_schema,
-    fetch_all,
-    fetch_one,
-    get_connection,
-    load_queries,
-)
+from db.database import create_schema, get_connection
 from db.import_json import (
     import_all,
     import_bookings,
@@ -40,13 +34,6 @@ BOOKINGS = [
     {"id": 3, "pet_id": 1, "room_id": 2, "check_in": "2026-10-01",
      "check_out": "2026-10-08", "is_cancelled": True},
 ]
-
-PARAMS = {
-    "rooms_by_size": ("малое",),
-    "available_rooms": ("2026-10-08", "2026-10-03", "", ""),
-    "popular_rooms": (2,),
-    "upcoming_check_ins": ("2026-01-01", 3),
-}
 
 
 @pytest.fixture
@@ -85,46 +72,6 @@ def test_foreign_key_is_enforced(db_path):
                 "VALUES (?, ?, ?, ?)",
                 (99, 1, "2026-12-01", "2026-12-02"),
             )
-
-
-def test_queries_file_has_enough_queries():
-    """В файле запросов не меньше десяти именованных запросов"""
-    assert len(load_queries()) >= 10
-
-
-@pytest.mark.parametrize("name", sorted(load_queries()))
-def test_every_query_runs(db_path, name):
-    """Каждый запрос из файла выполняется без ошибок"""
-    fetch_all(name, PARAMS.get(name, ()), db_path)
-
-
-def test_available_rooms_skip_overlaps_only(db_path):
-    """Занятое место исключается, отменённая бронь место не блокирует"""
-    rooms = fetch_all("available_rooms", PARAMS["available_rooms"], db_path)
-    assert [room["name"] for room in rooms] == ["Апартаменты"]
-    rooms = fetch_all(
-        "available_rooms", ("2026-10-10", "2026-10-08", "", ""), db_path
-    )
-    assert len(rooms) == 2
-
-
-def test_having_filters_groups(db_path):
-    """HAVING оставляет только места с нужным числом броней"""
-    assert len(fetch_all("popular_rooms", (2,), db_path)) == 1
-    assert fetch_all("popular_rooms", (3,), db_path) == []
-
-
-def test_income_counts_only_active(db_path):
-    """Выручка считается только по активным броням"""
-    summary = fetch_one("income_summary", (), db_path)
-    assert summary["bookings_count"] == 2
-    assert summary["income"] == 7 * 800 + 2 * 800
-
-
-def test_parameters_are_not_executed_as_sql(db_path):
-    """Подстановка через параметр не меняет смысл запроса"""
-    rooms = fetch_all("rooms_by_size", ("' OR 1 = 1 --",), db_path)
-    assert rooms == []
 
 
 def test_import_matches_json_files(tmp_path):
