@@ -21,6 +21,7 @@ INSTALLED_APPS = [
     "rooms",
     "pets",
     "bookings",
+    "users",
 ]
 
 MIDDLEWARE = [
