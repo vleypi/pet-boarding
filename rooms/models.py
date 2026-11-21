@@ -17,10 +17,12 @@ class Room(models.Model):
         max_length=20,
         choices=SIZE_CHOICES,
         verbose_name="Размер",
+        help_text="Малое до 5 кг, среднее до 20 кг, большое от 20 кг",
     )
     price_per_night = models.PositiveIntegerField(
         validators=[MinValueValidator(1)],
         verbose_name="Тариф за сутки, руб.",
+        help_text="Целое число рублей больше нуля",
     )
 
     class Meta:

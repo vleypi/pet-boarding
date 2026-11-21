@@ -9,7 +9,11 @@ class User(models.Model):
     ROLE_CHOICES = [(ROLE_CLIENT, ROLE_CLIENT), (ROLE_ADMIN, ROLE_ADMIN)]
 
     name = models.CharField(max_length=150, verbose_name="Имя")
-    phone = models.CharField(max_length=30, verbose_name="Телефон")
+    phone = models.CharField(
+        max_length=30,
+        verbose_name="Телефон",
+        help_text="Например, +7 900 111 22 33",
+    )
     role = models.CharField(
         max_length=20,
         choices=ROLE_CHOICES,

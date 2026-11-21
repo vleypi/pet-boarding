@@ -24,7 +24,10 @@ class Booking(models.Model):
         verbose_name="Место",
     )
     check_in = models.DateField(verbose_name="Дата заезда")
-    check_out = models.DateField(verbose_name="Дата выезда")
+    check_out = models.DateField(
+        verbose_name="Дата выезда",
+        help_text="Должна быть позже даты заезда",
+    )
     is_cancelled = models.BooleanField(
         default=False,
         verbose_name="Отменено",
@@ -59,13 +62,17 @@ class Booking(models.Model):
 
     @property
     def nights(self) -> int:
-        """Число суток проживания"""
+        """Число суток проживания, ноль пока даты не заданы"""
+        if self.check_in is None or self.check_out is None:
+            return 0
         return count_nights(self.check_in, self.check_out)
 
     @property
     def cost(self) -> int:
-        """Стоимость проживания по тарифу места"""
-        return self.room.cost_for(self.check_in, self.check_out)
+        """Стоимость проживания по тарифу места, ноль пока место не выбрано"""
+        if self.room_id is None:
+            return 0
+        return self.nights * self.room.price_per_night
 
     def overlaps(self, check_in: date, check_out: date) -> bool:
         """Проверить, пересекается ли бронирование с периодом"""

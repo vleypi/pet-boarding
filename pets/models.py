@@ -17,11 +17,19 @@ class Pet(models.Model):
     """Питомец, которого владелец оставляет в гостинице"""
 
     name = models.CharField(max_length=100, verbose_name="Кличка")
-    species = models.CharField(max_length=50, verbose_name="Вид")
-    age_months = models.PositiveIntegerField(verbose_name="Возраст, мес.")
+    species = models.CharField(
+        max_length=50,
+        verbose_name="Вид",
+        help_text="Гостиница принимает кошек и собак",
+    )
+    age_months = models.PositiveIntegerField(
+        verbose_name="Возраст, мес.",
+        help_text="Принимаем питомцев от 3 месяцев",
+    )
     weight_kg = models.FloatField(
         validators=[MinValueValidator(0.1)],
         verbose_name="Вес, кг",
+        help_text="По весу подбирается размер места",
     )
     is_vaccinated = models.BooleanField(
         default=False,
