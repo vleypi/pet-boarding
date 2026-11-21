@@ -13,9 +13,9 @@ class BookingAdmin(CyrillicSearchMixin, admin.ModelAdmin):
     """Список и карточка бронирований в административной панели"""
 
     list_display = ("id", "pet", "owner", "room", "check_in", "check_out",
-                    "nights", "cost", "is_cancelled")
+                    "nights", "cost", "status")
     list_display_links = ("id", "pet")
-    list_filter = ("is_cancelled", "room__size", "room")
+    list_filter = ("status", "room__size", "room")
     search_fields = ("pet__name", "pet__owner__name", "room__name")
     list_select_related = ("pet__owner", "room")
     autocomplete_fields = ("pet", "room")
@@ -23,7 +23,7 @@ class BookingAdmin(CyrillicSearchMixin, admin.ModelAdmin):
     date_hierarchy = "check_in"
     ordering = ("-check_in",)
     list_per_page = 20
-    actions = ("cancel_selected", "restore_selected")
+    actions = ("cancel_selected", "complete_selected", "restore_selected")
 
     @admin.display(description="Владелец", ordering="pet__owner__name")
     def owner(self, obj: Booking) -> str:
@@ -42,18 +42,34 @@ class BookingAdmin(CyrillicSearchMixin, admin.ModelAdmin):
 
     @admin.action(description="Отменить выбранные бронирования")
     def cancel_selected(self, request, queryset) -> None:
-        """Отметить выбранные бронирования отменёнными"""
-        updated = queryset.filter(is_cancelled=False).update(
-            is_cancelled=True
-        )
+        """Отметить выбранные активные бронирования отменёнными"""
+        updated = queryset.active().update(status=Booking.Status.CANCELLED)
         self.message_user(request, f"Отменено бронирований: {updated}",
+                          messages.SUCCESS)
+
+    @admin.action(description="Завершить выбранные бронирования")
+    def complete_selected(self, request, queryset) -> None:
+        """Отметить выбранные активные бронирования завершёнными"""
+        updated = queryset.active().update(status=Booking.Status.COMPLETED)
+        self.message_user(request, f"Завершено бронирований: {updated}",
                           messages.SUCCESS)
 
     @admin.action(description="Вернуть выбранные в активные")
     def restore_selected(self, request, queryset) -> None:
-        """Снять отметку отмены у выбранных бронирований"""
-        updated = queryset.filter(is_cancelled=True).update(
-            is_cancelled=False
-        )
-        self.message_user(request, f"Возвращено в активные: {updated}",
+        """Вернуть бронирования в активные, если место свободно"""
+        restored, skipped = 0, []
+        for booking in queryset.exclude(status=Booking.Status.ACTIVE):
+            booking.status = Booking.Status.ACTIVE
+            if booking.conflicts().exists():
+                skipped.append(str(booking.pk))
+                continue
+            booking.save(update_fields=["status"])
+            restored += 1
+        self.message_user(request, f"Возвращено в активные: {restored}",
                           messages.SUCCESS)
+        if skipped:
+            self.message_user(
+                request,
+                "Место занято, не возвращены: " + ", ".join(skipped),
+                messages.WARNING,
+            )

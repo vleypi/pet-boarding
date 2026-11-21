@@ -10,7 +10,7 @@ class BookingInline(admin.TabularInline):
     """Бронирования места внутри его карточки"""
 
     model = Booking
-    fields = ("pet", "check_in", "check_out", "is_cancelled")
+    fields = ("pet", "check_in", "check_out", "status")
     autocomplete_fields = ("pet",)
     extra = 0
     show_change_link = True
@@ -34,7 +34,7 @@ class RoomAdmin(CyrillicSearchMixin, admin.ModelAdmin):
         """Добавить к местам число активных бронирований одним запросом"""
         return super().get_queryset(request).annotate(
             active_count=Count(
-                "bookings", filter=Q(bookings__is_cancelled=False)
+                "bookings", filter=Q(bookings__status=Booking.Status.ACTIVE)
             )
         )
 

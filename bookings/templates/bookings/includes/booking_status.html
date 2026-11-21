@@ -1,5 +1,7 @@
-{% if booking.is_cancelled %}
-    <span class="badge text-bg-secondary booking-status booking-status-cancelled">{{ booking.status }}</span>
+{% if booking.status == "active" %}
+    <span class="badge text-bg-success booking-status booking-status-active">{{ booking.get_status_display|lower }}</span>
+{% elif booking.status == "completed" %}
+    <span class="badge text-bg-primary booking-status booking-status-completed">{{ booking.get_status_display|lower }}</span>
 {% else %}
-    <span class="badge text-bg-success booking-status booking-status-active">{{ booking.status }}</span>
+    <span class="badge text-bg-secondary booking-status booking-status-cancelled">{{ booking.get_status_display|lower }}</span>
 {% endif %}

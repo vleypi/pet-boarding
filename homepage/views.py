@@ -19,7 +19,7 @@ UPCOMING_LIMIT = 3
 
 def index(request: HttpRequest) -> HttpResponse:
     """Главная страница: описание гостиницы, условия приёма и разделы"""
-    active = Booking.objects.filter(is_cancelled=False)
+    active = Booking.objects.active()
     context = {
         "species": sorted(ALLOWED_SPECIES),
         "min_age_months": MIN_AGE_MONTHS,

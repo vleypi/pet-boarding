@@ -9,7 +9,7 @@ class PetBookingInline(admin.TabularInline):
     """История бронирований питомца внутри его карточки"""
 
     model = Booking
-    fields = ("room", "check_in", "check_out", "is_cancelled")
+    fields = ("room", "check_in", "check_out", "status")
     autocomplete_fields = ("room",)
     extra = 0
     show_change_link = True

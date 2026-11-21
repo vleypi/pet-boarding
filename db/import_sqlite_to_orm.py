@@ -48,7 +48,8 @@ def import_all(conn: sqlite3.Connection) -> dict[str, int]:
                     room_id=row["room_id"],
                     check_in=date.fromisoformat(row["check_in"]),
                     check_out=date.fromisoformat(row["check_out"]),
-                    is_cancelled=bool(row["is_cancelled"]))
+                    status=(Booking.Status.CANCELLED if row["is_cancelled"]
+                            else Booking.Status.ACTIVE))
             for row in read_rows(conn, "bookings")
         )
     return {

@@ -1,6 +1,7 @@
 from datetime import date, timedelta
 
 import pytest
+from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from django.db.models import ProtectedError
 from django.utils import timezone
@@ -43,7 +44,7 @@ def hotel():
     cancelled = Booking.objects.create(pet=rex, room=small,
                                        check_in=date(2026, 11, 1),
                                        check_out=date(2026, 11, 3),
-                                       is_cancelled=True)
+                                       status=Booking.Status.CANCELLED)
     return {"anna": anna, "sergey": sergey, "barsik": barsik, "rex": rex,
             "puppy": puppy, "small": small, "large": large,
             "medium": medium, "cancelled": cancelled}
@@ -55,7 +56,7 @@ def test_relations_work_both_ways(hotel):
     assert booking.pet.owner.name == "Иванова Анна"
     assert list(hotel["anna"].pets.all()) == [hotel["barsik"]]
     assert hotel["small"].bookings.count() == 2
-    assert hotel["rex"].bookings.filter(is_cancelled=False).count() == 1
+    assert hotel["rex"].bookings.active().count() == 1
 
 
 def test_protect_forbids_deleting_room_with_bookings(hotel):
@@ -75,12 +76,15 @@ def test_check_constraint_rejects_wrong_period(hotel):
 
 
 def test_cancel_saves_flag(hotel):
-    """cancel сохраняет признак отмены в базе"""
-    booking = Booking.objects.filter(is_cancelled=False).first()
+    """cancel и complete сохраняют статус в базе"""
+    booking = Booking.objects.active().first()
     booking.cancel()
     booking.refresh_from_db()
-    assert booking.is_cancelled
-    assert booking.status == "отменено"
+    assert booking.status == Booking.Status.CANCELLED
+    assert booking.get_status_display() == "Отменено"
+    booking.complete()
+    booking.refresh_from_db()
+    assert booking.status == "completed"
 
 
 def test_update_and_cost(hotel):
@@ -197,11 +201,11 @@ def test_booking_pagination_keeps_params(client, hotel):
     assert response.context["page_obj"].number == 2
 
 
-def test_statistics_counts_only_active(client, hotel):
-    """Статистика считает только активные брони"""
+def test_statistics_skips_cancelled(client, hotel):
+    """Сутки и выручка не учитывают отменённые брони"""
     response = client.get("/bookings/statistics/", {"min": "2"})
     summary = response.context["summary"]
-    assert summary["bookings_count"] == 2
+    assert summary["total_count"] == 3
     assert summary["nights"] == 14
     assert summary["income"] == 7 * 800 + 7 * 1800
     assert summary["cancelled_count"] == 1
@@ -221,3 +225,104 @@ def test_home_shows_upcoming(client, hotel):
     upcoming = list(response.context["upcoming"])
     assert [item["pet_name"] for item in upcoming] == ["Барсик"]
     assert response.context["active_count"] == 3
+
+
+def test_queryset_methods(hotel):
+    """Методы менеджера отбирают брони по статусу и периоду"""
+    Booking.objects.filter(pet=hotel["barsik"]).update(
+        status=Booking.Status.COMPLETED
+    )
+    assert Booking.objects.active().count() == 1
+    assert Booking.objects.cancelled().count() == 1
+    assert Booking.objects.completed().count() == 1
+    assert Booking.objects.billable().count() == 2
+    busy = Booking.objects.overlapping(date(2026, 10, 5), date(2026, 10, 6))
+    assert [booking.room for booking in busy] == [hotel["large"]]
+
+
+def test_completed_booking_does_not_block_room(client, hotel):
+    """Завершённая бронь, как и отменённая, не занимает место"""
+    Booking.objects.filter(pet=hotel["barsik"]).update(
+        status=Booking.Status.COMPLETED
+    )
+    response = client.get("/rooms/available/", {
+        "check_in": "2026-10-05", "check_out": "2026-10-06",
+    })
+    names = {room.name for room in response.context["rooms"]}
+    assert names == {"Вольер 1", "Комната 1"}
+
+
+@pytest.mark.parametrize("changes, field", [
+    ({"check_in": date(2026, 10, 5), "check_out": date(2026, 10, 4)},
+     "check_out"),
+    ({"room": "large"}, "room"),
+    ({"check_in": date(2026, 10, 7), "check_out": date(2026, 10, 9)},
+     "room"),
+    ({"pet": "puppy"}, "pet"),
+])
+def test_clean_checks_business_rules(hotel, changes, field):
+    """clean проверяет период, размер места, занятость и допуск питомца"""
+    values = {"pet": hotel["barsik"], "room": hotel["small"],
+              "check_in": date(2026, 12, 1), "check_out": date(2026, 12, 3)}
+    for key, value in changes.items():
+        values[key] = hotel[value] if isinstance(value, str) else value
+    with pytest.raises(ValidationError) as error:
+        Booking(**values).full_clean()
+    assert field in error.value.message_dict
+
+
+def test_clean_allows_free_room_and_cancelled_overlap(hotel):
+    """Пересечение с отменённой бронью не мешает новой брони"""
+    Booking(pet=hotel["barsik"], room=hotel["small"],
+            check_in=date(2026, 11, 1),
+            check_out=date(2026, 11, 3)).full_clean()
+
+
+def test_statistics_counts_statuses(client, hotel):
+    """Статистика показывает число броней каждого статуса"""
+    Booking.objects.filter(pet=hotel["barsik"]).update(
+        status=Booking.Status.COMPLETED
+    )
+    summary = client.get("/bookings/statistics/").context["summary"]
+    assert (summary["active_count"], summary["completed_count"],
+            summary["cancelled_count"]) == (1, 1, 1)
+    assert summary["income"] == 7 * 800 + 7 * 1800
+
+
+@pytest.fixture
+def admin_client_logged(client, django_user_model):
+    """Клиент, вошедший как суперпользователь"""
+    django_user_model.objects.create_superuser("admin", "a@a.ru", "secret")
+    client.login(username="admin", password="secret")
+    return client
+
+
+@pytest.mark.parametrize("url", [
+    "/admin/", "/admin/rooms/room/", "/admin/users/user/",
+    "/admin/pets/pet/", "/admin/bookings/booking/",
+    "/admin/bookings/booking/add/",
+])
+def test_admin_pages_open(admin_client_logged, hotel, url):
+    """Страницы административной панели открываются"""
+    assert admin_client_logged.get(url).status_code == 200
+
+
+def test_admin_search_is_case_insensitive(admin_client_logged, hotel):
+    """Поиск в админке находит кириллицу в любом регистре"""
+    response = admin_client_logged.get("/admin/bookings/booking/",
+                                       {"q": "РЕКС"})
+    assert response.context["cl"].result_count == 2
+
+
+def test_admin_restore_skips_busy_room(admin_client_logged, hotel):
+    """Возврат в активные пропускает бронь, если место уже занято"""
+    cancelled = hotel["cancelled"]
+    Booking.objects.create(pet=hotel["barsik"], room=hotel["small"],
+                           check_in=date(2026, 11, 2),
+                           check_out=date(2026, 11, 4))
+    admin_client_logged.post("/admin/bookings/booking/", {
+        "action": "restore_selected",
+        "_selected_action": [cancelled.pk],
+    })
+    cancelled.refresh_from_db()
+    assert cancelled.status == Booking.Status.CANCELLED

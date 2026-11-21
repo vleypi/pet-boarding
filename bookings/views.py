@@ -26,11 +26,6 @@ from users.models import User
 PAGE_SIZE = 5
 DEFAULT_POPULAR_THRESHOLD = 2
 
-STATUS_FILTERS = {
-    "active": Q(is_cancelled=False),
-    "cancelled": Q(is_cancelled=True),
-}
-
 SORT_FIELDS = {
     "check_in": ("check_in", "pk"),
     "-check_in": ("-check_in", "-pk"),
@@ -73,7 +68,7 @@ def read_filters(request: HttpRequest) -> dict:
     """Прочитать и проверить параметры фильтрации списка бронирований"""
     errors: list[str] = []
     status = request.GET.get("status", "")
-    if status not in STATUS_FILTERS:
+    if status not in Booking.Status.values:
         status = ""
     size = request.GET.get("size", "")
     if size not in ROOM_SIZES:
@@ -104,9 +99,9 @@ def read_filters(request: HttpRequest) -> dict:
 
 def filter_bookings(filters: dict):
     """Применить фильтры, поиск и сортировку к бронированиям"""
-    bookings = Booking.objects.select_related("pet__owner", "room")
+    bookings = Booking.objects.with_related()
     if filters["status"]:
-        bookings = bookings.filter(STATUS_FILTERS[filters["status"]])
+        bookings = bookings.filter(status=filters["status"])
     if filters["size"]:
         bookings = bookings.filter(room__size=filters["size"])
     if filters["room"]:
@@ -134,7 +129,7 @@ def booking_list(request: HttpRequest) -> HttpResponse:
         "filters": filters,
         "rooms": Room.objects.only("id", "name"),
         "sizes": ROOM_SIZES,
-        "statuses": {"active": "активные", "cancelled": "отменённые"},
+        "statuses": Booking.Status.choices,
         "sort_titles": SORT_TITLES,
     }
     return render(request, "bookings/booking_list.html", context)
@@ -143,7 +138,7 @@ def booking_list(request: HttpRequest) -> HttpResponse:
 def booking_detail(request: HttpRequest, booking_id: int) -> HttpResponse:
     """Карточка бронирования: питомец, владелец, место, срок и стоимость"""
     booking = get_object_or_404(
-        Booking.objects.select_related("pet__owner", "room"),
+        Booking.objects.with_related(),
         pk=booking_id,
     )
     return render(
@@ -162,8 +157,8 @@ def popular_threshold(request: HttpRequest) -> int:
 
 
 def rooms_with_stats():
-    """Места с числом активных броней, сутками и выручкой по каждому"""
-    active = Q(bookings__is_cancelled=False)
+    """Места с числом оплачиваемых броней, сутками и выручкой по каждому"""
+    active = ~Q(bookings__status=Booking.Status.CANCELLED)
     rooms = list(
         Room.objects.annotate(
             bookings_count=Count("bookings", filter=active),
@@ -191,22 +186,28 @@ def statistics(request: HttpRequest) -> HttpResponse:
     """Статистика гостиницы на агрегатных запросах ORM"""
     threshold = popular_threshold(request)
     rooms = rooms_with_stats()
-    summary = Booking.objects.filter(is_cancelled=False).aggregate(
-        bookings_count=Count("id"),
+    summary = Booking.objects.billable().aggregate(
         stay=Sum(stay_length()),
         average_stay=Avg(stay_length()),
         first_check_in=Min("check_in"),
         last_check_out=Max("check_out"),
     )
+    summary.update(Booking.objects.aggregate(
+        total_count=Count("id"),
+        active_count=Count("id", filter=Q(status=Booking.Status.ACTIVE)),
+        cancelled_count=Count(
+            "id", filter=Q(status=Booking.Status.CANCELLED)
+        ),
+        completed_count=Count(
+            "id", filter=Q(status=Booking.Status.COMPLETED)
+        ),
+    ))
     summary["nights"] = summary["stay"].days if summary["stay"] else 0
     summary["average_nights"] = (
         summary["average_stay"].total_seconds() / 86400
         if summary["average_stay"] else 0
     )
     summary["income"] = sum(room.income for room in rooms)
-    summary["cancelled_count"] = Booking.objects.filter(
-        is_cancelled=True
-    ).count()
     context = {
         "summary": summary,
         "per_room": rooms,
@@ -219,7 +220,8 @@ def statistics(request: HttpRequest) -> HttpResponse:
         .order_by("-pets_count", "name"),
         "popular": Room.objects.annotate(
             bookings_count=Count(
-                "bookings", filter=Q(bookings__is_cancelled=False)
+                "bookings",
+                filter=~Q(bookings__status=Booking.Status.CANCELLED),
             )
         )
         .filter(bookings_count__gte=threshold)

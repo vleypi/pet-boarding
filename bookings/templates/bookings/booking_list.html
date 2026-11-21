@@ -15,8 +15,8 @@
             <label class="form-label" for="status">Статус</label>
             <select class="form-select" id="status" name="status">
                 <option value="">все</option>
-                {% for value, title in statuses.items %}
-                    <option value="{{ value }}" {% if value == filters.status %}selected{% endif %}>{{ title }}</option>
+                {% for value, title in statuses %}
+                    <option value="{{ value }}" {% if value == filters.status %}selected{% endif %}>{{ title|lower }}</option>
                 {% endfor %}
             </select>
         </div>

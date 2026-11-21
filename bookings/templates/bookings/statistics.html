@@ -7,7 +7,7 @@
 
     <div class="row g-3 mb-4">
         <div class="col-6 col-lg-3"><div class="card stat-card"><div class="card-body">
-            <div class="stat-value">{{ summary.bookings_count }}</div><div class="text-muted">активных бронирований, отменено {{ summary.cancelled_count }}</div>
+            <div class="stat-value">{{ summary.total_count }}</div><div class="text-muted">бронирований всего</div>
         </div></div></div>
         <div class="col-6 col-lg-3"><div class="card stat-card"><div class="card-body">
             <div class="stat-value">{{ summary.nights }}</div><div class="text-muted">суток забронировано</div>
@@ -20,8 +20,16 @@
         </div></div></div>
     </div>
 
+    <h2 class="h5">Бронирования по статусам</h2>
+    <div class="d-flex flex-wrap gap-2 mb-3">
+        <span class="badge text-bg-success fs-6">активно: {{ summary.active_count }}</span>
+        <span class="badge text-bg-primary fs-6">завершено: {{ summary.completed_count }}</span>
+        <span class="badge text-bg-secondary fs-6">отменено: {{ summary.cancelled_count }}</span>
+    </div>
+    <p class="text-muted">Сутки, выручка и загрузка мест считаются по активным и завершённым бронированиям, отменённые не учитываются.</p>
+
     {% if summary.first_check_in %}
-        <p class="text-muted">Период активных бронирований: с {{ summary.first_check_in|date:"d.m.Y" }} по {{ summary.last_check_out|date:"d.m.Y" }}</p>
+        <p class="text-muted">Период оплачиваемых бронирований: с {{ summary.first_check_in|date:"d.m.Y" }} по {{ summary.last_check_out|date:"d.m.Y" }}</p>
     {% endif %}
 
     <div class="row g-4">

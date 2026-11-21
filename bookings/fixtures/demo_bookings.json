@@ -7,7 +7,7 @@
             "room": 1,
             "check_in": "2026-11-24",
             "check_out": "2026-11-30",
-            "is_cancelled": false
+            "status": "active"
         }
     },
     {
@@ -18,7 +18,7 @@
             "room": 2,
             "check_in": "2026-11-25",
             "check_out": "2026-12-02",
-            "is_cancelled": false
+            "status": "active"
         }
     },
     {
@@ -29,7 +29,7 @@
             "room": 5,
             "check_in": "2026-12-01",
             "check_out": "2026-12-08",
-            "is_cancelled": false
+            "status": "active"
         }
     },
     {
@@ -40,7 +40,7 @@
             "room": 6,
             "check_in": "2026-12-05",
             "check_out": "2026-12-12",
-            "is_cancelled": false
+            "status": "active"
         }
     },
     {
@@ -51,7 +51,7 @@
             "room": 2,
             "check_in": "2026-12-20",
             "check_out": "2026-12-27",
-            "is_cancelled": true
+            "status": "cancelled"
         }
     },
     {
@@ -62,7 +62,7 @@
             "room": 1,
             "check_in": "2026-12-28",
             "check_out": "2027-01-05",
-            "is_cancelled": false
+            "status": "active"
         }
     },
     {
@@ -73,7 +73,7 @@
             "room": 6,
             "check_in": "2026-12-29",
             "check_out": "2027-01-06",
-            "is_cancelled": false
+            "status": "active"
         }
     },
     {
@@ -84,7 +84,7 @@
             "room": 5,
             "check_in": "2027-01-10",
             "check_out": "2027-01-15",
-            "is_cancelled": true
+            "status": "cancelled"
         }
     },
     {
@@ -95,7 +95,7 @@
             "room": 1,
             "check_in": "2027-01-12",
             "check_out": "2027-01-19",
-            "is_cancelled": false
+            "status": "active"
         }
     },
     {
@@ -106,7 +106,29 @@
             "room": 2,
             "check_in": "2027-02-01",
             "check_out": "2027-02-05",
-            "is_cancelled": false
+            "status": "active"
+        }
+    },
+    {
+        "model": "bookings.booking",
+        "pk": 17,
+        "fields": {
+            "pet": 1,
+            "room": 1,
+            "check_in": "2026-09-10",
+            "check_out": "2026-09-15",
+            "status": "completed"
+        }
+    },
+    {
+        "model": "bookings.booking",
+        "pk": 18,
+        "fields": {
+            "pet": 2,
+            "room": 5,
+            "check_in": "2026-09-20",
+            "check_out": "2026-09-25",
+            "status": "completed"
         }
     }
 ]
