@@ -202,7 +202,7 @@ def test_room_photo_upload(client, data, settings, tmp_path):
     (None, "Выберите файл изображения"),
     ("text", "Загрузите правильное изображение"),
     ("big", "Файл больше 2 МБ"),
-])
+], ids=["empty", "not_image", "too_big"])
 def test_room_photo_validation(client, data, settings, tmp_path, upload,
                                message, monkeypatch):
     """Пустая форма, не изображение и слишком большой файл отклоняются"""
