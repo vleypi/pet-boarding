@@ -1,6 +1,4 @@
-from datetime import date
-from typing import Optional
-
+from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import (
     Avg,
@@ -14,8 +12,10 @@ from django.db.models import (
     Sum,
 )
 from django.http import HttpRequest, HttpResponse
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
 
+from bookings.forms import SORT_FIELDS, BookingFilterForm, BookingForm
 from bookings.models import Booking
 from db.search import text_search
 from pets.models import Pet
@@ -26,24 +26,6 @@ from users.models import User
 PAGE_SIZE = 5
 DEFAULT_POPULAR_THRESHOLD = 2
 
-SORT_FIELDS = {
-    "check_in": ("check_in", "pk"),
-    "-check_in": ("-check_in", "-pk"),
-    "pet": ("pet__name", "check_in"),
-    "owner": ("pet__owner__name", "pet__name", "check_in"),
-    "room": ("room__name", "check_in"),
-    "price": ("-room__price_per_night", "check_in"),
-}
-SORT_TITLES = {
-    "check_in": "сначала ранние заезды",
-    "-check_in": "сначала поздние заезды",
-    "pet": "по кличке питомца",
-    "owner": "по владельцу",
-    "room": "по месту",
-    "price": "сначала дорогие места",
-}
-DEFAULT_SORT = "check_in"
-
 
 def stay_length(prefix: str = "") -> ExpressionWrapper:
     """Выражение ORM для срока проживания: дата выезда минус дата заезда"""
@@ -51,50 +33,6 @@ def stay_length(prefix: str = "") -> ExpressionWrapper:
         F(f"{prefix}check_out") - F(f"{prefix}check_in"),
         output_field=DurationField(),
     )
-
-
-def parse_date(text: str, title: str, errors: list[str]) -> Optional[date]:
-    """Разобрать дату из параметра запроса, при ошибке добавить сообщение"""
-    if not text:
-        return None
-    try:
-        return date.fromisoformat(text)
-    except ValueError:
-        errors.append(f"{title}: нужна дата в формате ГГГГ-ММ-ДД")
-        return None
-
-
-def read_filters(request: HttpRequest) -> dict:
-    """Прочитать и проверить параметры фильтрации списка бронирований"""
-    errors: list[str] = []
-    status = request.GET.get("status", "")
-    if status not in Booking.Status.values:
-        status = ""
-    size = request.GET.get("size", "")
-    if size not in ROOM_SIZES:
-        size = ""
-    room = request.GET.get("room", "")
-    if not room.isdigit():
-        room = ""
-    sort = request.GET.get("sort", DEFAULT_SORT)
-    if sort not in SORT_FIELDS:
-        sort = DEFAULT_SORT
-    date_from = parse_date(request.GET.get("date_from", ""), "Заезд с",
-                           errors)
-    date_to = parse_date(request.GET.get("date_to", ""), "Заезд по", errors)
-    if date_from and date_to and date_from > date_to:
-        errors.append("начало периода позже его окончания")
-        date_from = date_to = None
-    return {
-        "q": request.GET.get("q", "").strip(),
-        "status": status,
-        "size": size,
-        "room": room,
-        "date_from": date_from,
-        "date_to": date_to,
-        "sort": sort,
-        "errors": errors,
-    }
 
 
 def filter_bookings(filters: dict):
@@ -105,7 +43,7 @@ def filter_bookings(filters: dict):
     if filters["size"]:
         bookings = bookings.filter(room__size=filters["size"])
     if filters["room"]:
-        bookings = bookings.filter(room_id=int(filters["room"]))
+        bookings = bookings.filter(room=filters["room"])
     if filters["date_from"]:
         bookings = bookings.filter(check_in__gte=filters["date_from"])
     if filters["date_to"]:
@@ -118,20 +56,13 @@ def filter_bookings(filters: dict):
 
 
 def booking_list(request: HttpRequest) -> HttpResponse:
-    """Список бронирований с фильтрами, поиском, сортировкой и страницами"""
-    filters = read_filters(request)
-    bookings = filter_bookings(filters)
+    """Список бронирований с формой фильтров, сортировкой и страницами"""
+    form = BookingFilterForm(request.GET)
+    bookings = filter_bookings(form.filters())
     page_obj = Paginator(bookings, PAGE_SIZE).get_page(
         request.GET.get("page")
     )
-    context = {
-        "page_obj": page_obj,
-        "filters": filters,
-        "rooms": Room.objects.only("id", "name"),
-        "sizes": ROOM_SIZES,
-        "statuses": Booking.Status.choices,
-        "sort_titles": SORT_TITLES,
-    }
+    context = {"page_obj": page_obj, "form": form}
     return render(request, "bookings/booking_list.html", context)
 
 
@@ -146,6 +77,60 @@ def booking_detail(request: HttpRequest, booking_id: int) -> HttpResponse:
         "bookings/booking_detail.html",
         {"booking": booking},
     )
+
+
+def initial_from_query(request: HttpRequest) -> dict:
+    """Начальные питомец и место из ссылок «Забронировать»"""
+    initial = {}
+    pet_id = request.GET.get("pet", "")
+    if pet_id.isdigit():
+        initial["pet"] = Pet.objects.filter(pk=int(pet_id)).first()
+    room_slug = request.GET.get("room", "")
+    if room_slug:
+        initial["room"] = Room.objects.filter(slug=room_slug).first()
+    return {key: value for key, value in initial.items() if value}
+
+
+def booking_create(request: HttpRequest) -> HttpResponse:
+    """Форма новой брони: GET показывает форму, POST проверяет и сохраняет"""
+    if request.method == "POST":
+        form = BookingForm(request.POST)
+        if form.is_valid():
+            booking = form.save()
+            messages.success(
+                request, f"Бронирование № {booking.pk} оформлено"
+            )
+            return redirect(booking)
+    else:
+        form = BookingForm(initial=initial_from_query(request))
+    context = {"form": form, "title": "Новое бронирование"}
+    return render(request, "bookings/booking_form.html", context)
+
+
+def booking_update(request: HttpRequest, booking_id: int) -> HttpResponse:
+    """Изменение активной брони той же формой с instance"""
+    booking = get_object_or_404(Booking.objects.active(), pk=booking_id)
+    form = BookingForm(request.POST or None, instance=booking)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, f"Бронирование № {booking.pk} изменено")
+        return redirect(booking)
+    context = {
+        "form": form,
+        "booking": booking,
+        "title": f"Изменение бронирования № {booking.pk}",
+    }
+    return render(request, "bookings/booking_form.html", context)
+
+
+@require_POST
+def booking_cancel(request: HttpRequest, booking_id: int) -> HttpResponse:
+    """Отменить активную бронь: запись остаётся, меняется статус"""
+    booking = get_object_or_404(Booking.objects.active(), pk=booking_id)
+    booking.cancel()
+    messages.success(request, f"Бронирование № {booking.pk} отменено, "
+                              "место освободилось")
+    return redirect(booking)
 
 
 def popular_threshold(request: HttpRequest) -> int:

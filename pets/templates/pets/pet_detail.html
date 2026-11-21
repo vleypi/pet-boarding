@@ -12,6 +12,11 @@
             <p class="card-text mb-1">Прививки: {{ pet.is_vaccinated|yesno:"есть,нет" }}</p>
             <p class="card-text mb-3">Владелец: {{ pet.owner.name }}, {{ pet.owner.phone }}</p>
             {% include "pets/includes/acceptance_badge.html" %}
+            {% if not reason %}
+                <div class="mt-3">
+                    <a class="btn btn-primary" href="{% url 'bookings:create' %}?pet={{ pet.id }}">Забронировать место</a>
+                </div>
+            {% endif %}
         </div>
     </div>
 

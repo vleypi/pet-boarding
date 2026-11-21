@@ -22,5 +22,15 @@
         </div>
     </div>
 
+    {% if booking.is_active %}
+        <div class="d-flex gap-2 mb-4">
+            <a class="btn btn-outline-primary" href="{% url 'bookings:update' booking.id %}">Изменить</a>
+            <form method="post" action="{% url 'bookings:cancel' booking.id %}">
+                {% csrf_token %}
+                <button class="btn btn-outline-danger" type="submit">Отменить бронирование</button>
+            </form>
+        </div>
+    {% endif %}
+
     <a class="btn btn-outline-secondary" href="{% url 'bookings:list' %}">К списку бронирований</a>
 {% endblock %}

@@ -176,14 +176,17 @@ def test_booking_list_sort_whitelist(client, hotel):
     first = response.context["page_obj"][0]
     assert first.check_in == date(2026, 11, 1)
     response = client.get("/bookings/", {"sort": "pet__owner__phone"})
-    assert response.context["filters"]["sort"] == "check_in"
+    assert "sort" in response.context["form"].errors
+    first = response.context["page_obj"][0]
+    assert first.check_in == date(2026, 10, 1)
 
 
 def test_booking_list_bad_date_reported(client, hotel):
     """Неверная дата не применяется и выводится сообщение"""
-    response = client.get("/bookings/", {"date_from": "2026-13-40"})
-    assert response.context["filters"]["errors"]
-    assert response.context["page_obj"].paginator.count == 3
+    response = client.get("/bookings/", {"date_from": "2026-13-40",
+                                         "status": "active"})
+    assert "date_from" in response.context["form"].errors
+    assert response.context["page_obj"].paginator.count == 2
 
 
 def test_booking_pagination_keeps_params(client, hotel):

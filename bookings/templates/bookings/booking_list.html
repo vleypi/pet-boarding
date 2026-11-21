@@ -3,68 +3,28 @@
 {% block title %}Бронирования | {{ site_name }}{% endblock %}
 
 {% block content %}
-    <h1 class="h2 mb-3">Бронирования</h1>
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <h1 class="h2 mb-0">Бронирования</h1>
+        <a class="btn btn-primary" href="{% url 'bookings:create' %}">Новое бронирование</a>
+    </div>
 
-    <form method="get" class="row g-2 align-items-end mb-3">
-        <div class="col-md-4 col-lg-3">
-            <label class="form-label" for="q">Поиск</label>
-            <input class="form-control" type="search" id="q" name="q" value="{{ filters.q }}"
-                   placeholder="Кличка или владелец">
-        </div>
-        <div class="col-6 col-md-4 col-lg-2">
-            <label class="form-label" for="status">Статус</label>
-            <select class="form-select" id="status" name="status">
-                <option value="">все</option>
-                {% for value, title in statuses %}
-                    <option value="{{ value }}" {% if value == filters.status %}selected{% endif %}>{{ title|lower }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div class="col-6 col-md-4 col-lg-2">
-            <label class="form-label" for="size">Размер места</label>
-            <select class="form-select" id="size" name="size">
-                <option value="">любой</option>
-                {% for item in sizes %}
-                    <option value="{{ item }}" {% if item == filters.size %}selected{% endif %}>{{ item }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div class="col-6 col-md-4 col-lg-2">
-            <label class="form-label" for="room">Место</label>
-            <select class="form-select" id="room" name="room">
-                <option value="">любое</option>
-                {% for room in rooms %}
-                    <option value="{{ room.id }}" {% if room.id|stringformat:"d" == filters.room %}selected{% endif %}>{{ room.name }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div class="col-6 col-md-4 col-lg-3">
-            <label class="form-label" for="sort">Сортировка</label>
-            <select class="form-select" id="sort" name="sort">
-                {% for value, title in sort_titles.items %}
-                    <option value="{{ value }}" {% if value == filters.sort %}selected{% endif %}>{{ title }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div class="col-6 col-md-4 col-lg-3">
-            <label class="form-label" for="date_from">Заезд с</label>
-            <input class="form-control" type="date" id="date_from" name="date_from"
-                   value="{{ filters.date_from|date:'Y-m-d' }}">
-        </div>
-        <div class="col-6 col-md-4 col-lg-3">
-            <label class="form-label" for="date_to">Заезд по</label>
-            <input class="form-control" type="date" id="date_to" name="date_to"
-                   value="{{ filters.date_to|date:'Y-m-d' }}">
-        </div>
-        <div class="col-auto">
+    <form method="get" class="row g-2 align-items-start mb-3 filter-form">
+        {% include "bookings/includes/form_field.html" with field=form.q col="col-md-4 col-lg-3" %}
+        {% include "bookings/includes/form_field.html" with field=form.status col="col-6 col-md-4 col-lg-2" %}
+        {% include "bookings/includes/form_field.html" with field=form.size col="col-6 col-md-4 col-lg-2" %}
+        {% include "bookings/includes/form_field.html" with field=form.room col="col-6 col-md-4 col-lg-2" %}
+        {% include "bookings/includes/form_field.html" with field=form.sort col="col-6 col-md-4 col-lg-3" %}
+        {% include "bookings/includes/form_field.html" with field=form.date_from col="col-6 col-md-4 col-lg-3" %}
+        {% include "bookings/includes/form_field.html" with field=form.date_to col="col-6 col-md-4 col-lg-3" %}
+        <div class="col-auto align-self-end">
             <button class="btn btn-primary" type="submit">Применить</button>
             <a class="btn btn-outline-secondary" href="{% url 'bookings:list' %}">Сбросить</a>
         </div>
     </form>
 
-    {% for error in filters.errors %}
-        <p class="text-danger mb-1">Ошибка: {{ error }}. Условие не применено</p>
-    {% endfor %}
+    {% if form.errors %}
+        <p class="text-danger">Условия с ошибками не применены, остальные фильтры работают</p>
+    {% endif %}
 
     <p class="text-muted">Найдено бронирований: {{ page_obj.paginator.count }}</p>
 
@@ -79,6 +39,7 @@
                     <th>Период</th>
                     <th class="text-end">Стоимость, ₽</th>
                     <th>Статус</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
@@ -91,9 +52,18 @@
                         <td>{% include "bookings/includes/booking_period.html" %}, {{ booking.nights }} сут.</td>
                         <td class="text-end">{{ booking.cost }}</td>
                         <td>{% include "bookings/includes/booking_status.html" %}</td>
+                        <td class="text-nowrap">
+                            {% if booking.is_active %}
+                                <a class="btn btn-sm btn-outline-primary" href="{% url 'bookings:update' booking.id %}">Изменить</a>
+                                <form method="post" action="{% url 'bookings:cancel' booking.id %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <button class="btn btn-sm btn-outline-danger" type="submit">Отменить</button>
+                                </form>
+                            {% endif %}
+                        </td>
                     </tr>
                 {% empty %}
-                    <tr><td colspan="7" class="text-muted">По выбранным условиям бронирований нет</td></tr>
+                    <tr><td colspan="8" class="text-muted">По выбранным условиям бронирований нет</td></tr>
                 {% endfor %}
             </tbody>
         </table>

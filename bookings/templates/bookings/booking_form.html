@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} | {{ site_name }}{% endblock %}
+
+{% block content %}
+    <h1 class="h2 mb-3">{{ title }}</h1>
+
+    {% if form.non_field_errors %}
+        <div class="alert alert-danger" role="alert">
+            {% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
+        </div>
+    {% endif %}
+
+    <form method="post" class="row g-3 booking-form" novalidate>
+        {% csrf_token %}
+        {% include "bookings/includes/form_field.html" with field=form.pet col="col-md-6" %}
+        {% include "bookings/includes/form_field.html" with field=form.room col="col-md-6" %}
+        {% include "bookings/includes/form_field.html" with field=form.check_in col="col-sm-6 col-md-3" %}
+        {% include "bookings/includes/form_field.html" with field=form.check_out col="col-sm-6 col-md-3" %}
+        <div class="col-12">
+            <button class="btn btn-primary" type="submit">Сохранить</button>
+            {% if booking %}
+                <a class="btn btn-outline-secondary" href="{{ booking.get_absolute_url }}">Отмена</a>
+            {% else %}
+                <a class="btn btn-outline-secondary" href="{% url 'bookings:list' %}">Отмена</a>
+            {% endif %}
+        </div>
+    </form>
+{% endblock %}
