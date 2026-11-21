@@ -84,10 +84,10 @@
             <tbody>
                 {% for booking in page_obj %}
                     <tr>
-                        <td><a href="{% url 'bookings:detail' booking.id %}">№ {{ booking.id }}</a></td>
-                        <td><a href="{% url 'pets:detail' booking.pet_id %}">{{ booking.pet.name }}</a></td>
+                        <td><a href="{{ booking.get_absolute_url }}">№ {{ booking.id }}</a></td>
+                        <td><a href="{{ booking.pet.get_absolute_url }}">{{ booking.pet.name }}</a></td>
                         <td>{{ booking.pet.owner.name }}</td>
-                        <td><a href="{% url 'rooms:detail' booking.room_id %}">{{ booking.room.name }}</a></td>
+                        <td><a href="{{ booking.room.get_absolute_url }}">{{ booking.room.name }}</a></td>
                         <td>{% include "bookings/includes/booking_period.html" %}, {{ booking.nights }} сут.</td>
                         <td class="text-end">{{ booking.cost }}</td>
                         <td>{% include "bookings/includes/booking_status.html" %}</td>

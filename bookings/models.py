@@ -2,6 +2,7 @@ from datetime import date
 
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.urls import reverse
 
 from pets.models import Pet
 from rooms.models import Room
@@ -103,6 +104,10 @@ class Booking(models.Model):
             f"{self.pet}, {self.room}, "
             f"с {self.check_in} по {self.check_out}"
         )
+
+    def get_absolute_url(self) -> str:
+        """Адрес страницы бронирования на сайте"""
+        return reverse("bookings:detail", kwargs={"booking_id": self.pk})
 
     @property
     def is_active(self) -> bool:

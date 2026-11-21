@@ -20,7 +20,7 @@
     <ul class="list-group mb-4">
         {% for booking in bookings %}
             <li class="list-group-item">
-                <a href="{% url 'bookings:detail' booking.id %}">{{ booking.pet.name }}</a>:
+                <a href="{{ booking.get_absolute_url }}">{{ booking.pet.name }}</a>:
                 {% include "bookings/includes/booking_period.html" %}
             </li>
         {% empty %}

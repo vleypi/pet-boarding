@@ -4,6 +4,6 @@
         <p class="card-text mb-1">Размер: {{ room.size }}</p>
         <p class="card-text">Тариф: {{ room.price_per_night }} ₽ в сутки</p>
         <a class="btn btn-outline-primary btn-sm"
-           href="{% url 'rooms:detail' room.id %}">Подробнее</a>
+           href="{{ room.get_absolute_url }}">Подробнее</a>
     </div>
 </article>

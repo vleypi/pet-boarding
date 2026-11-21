@@ -2,9 +2,17 @@ from datetime import date
 
 from django.core.validators import MinValueValidator
 from django.db import models
+from django.urls import reverse
+from django.utils.text import slugify
+from unidecode import unidecode
 
 from src.constants import ROOM_SIZES
 from src.models.common import count_nights
+
+
+def room_slug(name: str, room_id: int) -> str:
+    """Адрес места: транслитерация названия и номер записи"""
+    return f"{slugify(unidecode(name)) or 'room'}-{room_id}"
 
 
 class Room(models.Model):
@@ -13,6 +21,12 @@ class Room(models.Model):
     SIZE_CHOICES = [(size, size) for size in ROOM_SIZES]
 
     name = models.CharField(max_length=100, verbose_name="Название")
+    slug = models.SlugField(
+        max_length=120,
+        unique=True,
+        editable=False,
+        verbose_name="Адрес страницы",
+    )
     size = models.CharField(
         max_length=20,
         choices=SIZE_CHOICES,
@@ -45,6 +59,23 @@ class Room(models.Model):
     def __str__(self) -> str:
         """Вернуть название места"""
         return self.name
+
+    def save(self, *args, **kwargs) -> None:
+        """Сохранить место и при первом сохранении сформировать slug"""
+        if self.slug:
+            super().save(*args, **kwargs)
+            return
+        if self.pk is None:
+            super().save(*args, **kwargs)
+            self.slug = room_slug(self.name, self.pk)
+            super().save(update_fields=["slug"])
+            return
+        self.slug = room_slug(self.name, self.pk)
+        super().save(*args, **kwargs)
+
+    def get_absolute_url(self) -> str:
+        """Адрес страницы места на сайте"""
+        return reverse("rooms:detail", kwargs={"slug": self.slug})
 
     def is_suitable_for(self, pet) -> bool:
         """Проверить, подходит ли место питомцу по размеру"""

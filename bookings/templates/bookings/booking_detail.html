@@ -7,13 +7,13 @@
         <div class="card-body">
             <h1 class="h3 card-title">Бронирование № {{ booking.id }}</h1>
             <p class="card-text mb-1">
-                Питомец: <a href="{% url 'pets:detail' booking.pet.id %}">{{ booking.pet.name }}</a>
+                Питомец: <a href="{{ booking.pet.get_absolute_url }}">{{ booking.pet.name }}</a>
             </p>
             <p class="card-text mb-1">
                 Владелец: {{ booking.pet.owner.name }}, {{ booking.pet.owner.phone|default:"телефон не указан" }}
             </p>
             <p class="card-text mb-1">
-                Место: <a href="{% url 'rooms:detail' booking.room.id %}">{{ booking.room.name }}</a>, {{ booking.room.size }}
+                Место: <a href="{{ booking.room.get_absolute_url }}">{{ booking.room.name }}</a>, {{ booking.room.size }}
             </p>
             <p class="card-text mb-1">Период: {% include "bookings/includes/booking_period.html" %}</p>
             <p class="card-text mb-1">Срок: {{ booking.nights }} суток</p>

@@ -58,9 +58,9 @@ def available_rooms(request: HttpRequest) -> HttpResponse:
     return render(request, "rooms/available.html", context)
 
 
-def room_detail(request: HttpRequest, room_id: int) -> HttpResponse:
-    """Карточка места: тариф, занятость сегодня и активные бронирования"""
-    room = get_object_or_404(Room, pk=room_id)
+def room_detail(request: HttpRequest, slug: str) -> HttpResponse:
+    """Карточка места по slug: тариф, занятость сегодня и активные брони"""
+    room = get_object_or_404(Room, slug=slug)
     today = timezone.localdate()
     tomorrow = today + timedelta(days=1)
     busy_today = Booking.objects.overlapping(today, tomorrow).filter(

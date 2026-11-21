@@ -20,7 +20,7 @@ def import_all(conn: sqlite3.Connection) -> dict[str, int]:
 
     from bookings.models import Booking
     from pets.models import Pet
-    from rooms.models import Room
+    from rooms.models import Room, room_slug
     from users.models import User
 
     with transaction.atomic():
@@ -33,7 +33,8 @@ def import_all(conn: sqlite3.Connection) -> dict[str, int]:
         )
         rooms = Room.objects.bulk_create(
             Room(id=row["id"], name=row["name"], size=row["size"],
-                 price_per_night=row["price_per_night"])
+                 price_per_night=row["price_per_night"],
+                 slug=room_slug(row["name"], row["id"]))
             for row in read_rows(conn, "rooms")
         )
         pets = Pet.objects.bulk_create(

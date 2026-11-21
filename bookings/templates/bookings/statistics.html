@@ -40,7 +40,7 @@
                 <tbody>
                     {% for row in per_room %}
                         <tr>
-                            <td><a href="{% url 'rooms:detail' row.id %}">{{ row.name }}</a></td>
+                            <td><a href="{{ row.get_absolute_url }}">{{ row.name }}</a></td>
                             <td>{{ row.size }}</td>
                             <td class="text-end">{{ row.bookings_count }}</td>
                             <td class="text-end">{{ row.nights }}</td>
@@ -87,7 +87,7 @@
             <ul class="list-group">
                 {% for row in popular %}
                     <li class="list-group-item d-flex justify-content-between">
-                        <a href="{% url 'rooms:detail' row.id %}">{{ row.name }}</a>
+                        <a href="{{ row.get_absolute_url }}">{{ row.name }}</a>
                         <span>{{ row.bookings_count }}</span>
                     </li>
                 {% empty %}

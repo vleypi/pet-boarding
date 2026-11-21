@@ -41,7 +41,7 @@
             <tbody>
                 {% for pet in pets %}
                     <tr>
-                        <td><a href="{% url 'pets:detail' pet.id %}">{{ pet.name }}</a></td>
+                        <td><a href="{{ pet.get_absolute_url }}">{{ pet.name }}</a></td>
                         <td>{{ pet.species|capfirst }}</td>
                         <td class="text-end">{{ pet.weight_kg|floatformat:1 }}</td>
                         <td>{{ pet.owner_name }}</td>

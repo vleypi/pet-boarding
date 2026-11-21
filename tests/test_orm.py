@@ -144,8 +144,8 @@ def test_available_rooms_bad_dates(client, hotel):
     assert response.context["error"]
 
 
-@pytest.mark.parametrize("url", ["/rooms/999/", "/pets/999/",
-                                 "/bookings/999/"])
+@pytest.mark.parametrize("url", ["/rooms/net-takogo-99/", "/rooms/999/",
+                                 "/pets/999/", "/bookings/999/"])
 def test_missing_objects_return_404(client, hotel, url):
     """Несуществующий объект возвращает 404"""
     assert client.get(url).status_code == 404
@@ -326,3 +326,17 @@ def test_admin_restore_skips_busy_room(admin_client_logged, hotel):
     })
     cancelled.refresh_from_db()
     assert cancelled.status == Booking.Status.CANCELLED
+
+
+def test_room_slug_and_absolute_url(client, hotel):
+    """Slug формируется транслитерацией, страница открывается по нему"""
+    room = Room.objects.create(name="Вольер Люкс", size="малое",
+                               price_per_night=900)
+    assert room.slug == f"voler-liuks-{room.pk}"
+    assert room.get_absolute_url() == f"/rooms/{room.slug}/"
+    room.name = "Новое название"
+    room.save()
+    room.refresh_from_db()
+    assert room.slug == f"voler-liuks-{room.pk}"
+    response = client.get(room.get_absolute_url())
+    assert response.context["room"] == room

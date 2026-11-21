@@ -1,5 +1,6 @@
 from django.core.validators import MinValueValidator
 from django.db import models
+from django.urls import reverse
 
 from src.constants import (
     ALLOWED_SPECIES,
@@ -58,6 +59,10 @@ class Pet(models.Model):
     def __str__(self) -> str:
         """Вернуть кличку питомца"""
         return self.name
+
+    def get_absolute_url(self) -> str:
+        """Адрес страницы питомца на сайте"""
+        return reverse("pets:detail", kwargs={"pet_id": self.pk})
 
     def rejection_reason(self) -> str:
         """Вернуть причину отказа или пустую строку, если отказа нет"""
