@@ -30,12 +30,11 @@ def pet_list(request: HttpRequest) -> HttpResponse:
 def pet_detail(request: HttpRequest, pet_id: int) -> HttpResponse:
     """Карточка питомца: владелец, допуск, подходящие места и история"""
     pet = get_object_or_404(Pet.objects.select_related("owner"), pk=pet_id)
-    room_size = pet.required_room_size()
     context = {
         "pet": pet,
         "reason": pet.rejection_reason(),
-        "room_size": room_size,
-        "rooms": Room.objects.filter(size=room_size).order_by(
+        "room_size": pet.room_size,
+        "rooms": Room.objects.filter(size=pet.room_size).order_by(
             "price_per_night", "name"
         ),
         "bookings": pet.bookings.select_related("room").order_by("check_in"),

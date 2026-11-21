@@ -20,9 +20,9 @@ class PetAdmin(CyrillicSearchMixin, admin.ModelAdmin):
     """Список и карточка питомцев в административной панели"""
 
     list_display = ("id", "name", "species", "age_months", "weight_kg",
-                    "is_vaccinated", "owner", "acceptance")
+                    "room_size", "is_vaccinated", "owner", "acceptance")
     list_display_links = ("id", "name")
-    list_filter = ("species", "is_vaccinated")
+    list_filter = ("species", "room_size", "is_vaccinated")
     search_fields = ("name", "owner__name")
     list_select_related = ("owner",)
     autocomplete_fields = ("owner",)

@@ -1,5 +1,6 @@
 from django.core.validators import MinValueValidator
 from django.db import models
+from django.db.models import Case, Value, When
 from django.urls import reverse
 
 from src.constants import (
@@ -35,6 +36,17 @@ class Pet(models.Model):
     is_vaccinated = models.BooleanField(
         default=False,
         verbose_name="Есть прививки",
+    )
+    room_size = models.GeneratedField(
+        expression=Case(
+            When(weight_kg__lt=SMALL_ROOM_MAX_WEIGHT, then=Value(SIZE_SMALL)),
+            When(weight_kg__lt=MEDIUM_ROOM_MAX_WEIGHT,
+                 then=Value(SIZE_MEDIUM)),
+            default=Value(SIZE_LARGE),
+        ),
+        output_field=models.CharField(max_length=20),
+        db_persist=True,
+        verbose_name="Размер места",
     )
     owner = models.ForeignKey(
         User,

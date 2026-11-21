@@ -340,3 +340,14 @@ def test_room_slug_and_absolute_url(client, hotel):
     assert room.slug == f"voler-liuks-{room.pk}"
     response = client.get(room.get_absolute_url())
     assert response.context["room"] == room
+
+
+def test_generated_room_size_follows_weight(hotel):
+    """Размер места вычисляет база по весу и пересчитывает при изменении"""
+    assert Pet.objects.get(pk=hotel["barsik"].pk).room_size == "малое"
+    assert Pet.objects.filter(room_size="большое").get() == hotel["rex"]
+    pet = hotel["barsik"]
+    pet.weight_kg = 12
+    pet.save()
+    pet.refresh_from_db()
+    assert pet.room_size == "среднее" == pet.required_room_size()
